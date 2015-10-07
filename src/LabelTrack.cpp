@@ -60,6 +60,7 @@ for drawing different aspects of the label and its text box.
 #include "commands/CommandManager.h"
 
 #include "effects/TimeWarper.h"
+#include "TrackPanel.h"
 
 enum
 {
@@ -1672,9 +1673,23 @@ bool LabelTrack::CaptureKey(wxKeyEvent & event)
    return false;
 }
 
+///
+void LabelTrack::CharToScreenReader(int position)
+{
+   int len = mLabels[mSelIndex]->title.Length();
+   TrackPanel *trackPanel = GetActiveProject()->GetTrackPanel();
+
+   if (position < len)
+      trackPanel->ToScreenReader(mLabels[mSelIndex]->title[position]);
+   else
+      trackPanel->ToScreenReader(_("blank"));
+}
+
 /// KeyEvent is called for every keypress when over the label track.
 bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
 {
+   TrackPanel *trackPanel = GetActiveProject()->GetTrackPanel();
+
    // Only track true changes to the label
    bool updated = false;
 
@@ -1707,6 +1722,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                {
                   // delete one letter
                   if (mCurrentCursorPos > 0) {
+                     CharToScreenReader(mCurrentCursorPos - 1);
                      mLabels[mSelIndex]->title.Remove(mCurrentCursorPos-1, 1);
                      mCurrentCursorPos--;
                   }
@@ -1716,6 +1732,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
             {
                // ELSE no text in text box, so delete whole label.
                DeleteLabel( mSelIndex );
+               trackPanel->ToScreenReader(_("label deleted"));
             }
             mInitialCursorPos = mCurrentCursorPos;
             updated = true;
@@ -1741,11 +1758,13 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                      mLabels[mSelIndex]->title.Remove(mCurrentCursorPos, 1);
                   }
                }
+               CharToScreenReader(mCurrentCursorPos);
             }
             else
             {
                // delete whole label if no text in text box
                DeleteLabel( mSelIndex );
+               trackPanel->ToScreenReader(_("label deleted"));
             }
             mInitialCursorPos = mCurrentCursorPos;
             updated = true;
@@ -1758,12 +1777,14 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
          if (mods == wxMOD_SHIFT) {
             mCurrentCursorPos = 0;
             mDragXPos = 0;
+            CharToScreenReader(mCurrentCursorPos);
          }
          else if (mods == wxMOD_NONE)
          {
             mCurrentCursorPos = 0;
             mDragXPos = -1;
             mInitialCursorPos = mCurrentCursorPos;
+            CharToScreenReader(mCurrentCursorPos);
          }
          else {
             // Not handled
@@ -1777,12 +1798,14 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
          if (mods == wxMOD_SHIFT) {
             mCurrentCursorPos = (int)mLabels[mSelIndex]->title.length();
             mDragXPos = 0;
+            CharToScreenReader(mCurrentCursorPos);
          }
          else if (mods == wxMOD_NONE)
          {
             mCurrentCursorPos = (int)mLabels[mSelIndex]->title.length();
             mDragXPos = -1;
             mInitialCursorPos = mCurrentCursorPos;
+            CharToScreenReader(mCurrentCursorPos);
          }
          else {
             // Not handled
@@ -1798,6 +1821,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                mCurrentCursorPos--;
                mDragXPos = 0;
             }
+            CharToScreenReader(mCurrentCursorPos);
          }
          else if (mods == wxMOD_NONE) {
             if (mCurrentCursorPos > 0) {
@@ -1805,6 +1829,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                mDragXPos = -1;
                mInitialCursorPos = mCurrentCursorPos;
             }
+            CharToScreenReader(mCurrentCursorPos);
          }
          else {
             // Not handled
@@ -1820,6 +1845,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                mCurrentCursorPos++;
                mDragXPos = 0;
             }
+            CharToScreenReader(mCurrentCursorPos);
          }
          else if (mods == wxMOD_NONE)
          {
@@ -1828,6 +1854,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                mDragXPos = -1;
                mInitialCursorPos = mCurrentCursorPos;
             }
+            CharToScreenReader(mCurrentCursorPos);
          }
          else {
             // Not handled
@@ -1840,6 +1867,7 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
 
       case WXK_ESCAPE:
          mSelIndex = -1;
+         trackPanel->ToScreenReader(_("edit closed"));
          break;
 
       case WXK_TAB:
@@ -1854,6 +1882,8 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
             mCurrentCursorPos = mLabels[mSelIndex]->title.Length();
             //Set the selection region to be equal to the selection bounds of the tabbed-to label.
             newSel = mLabels[mSelIndex]->selectedRegion;
+
+            trackPanel->ToScreenReader(mLabels[mSelIndex]->title + wxT(" ") + _("Edit"));
          }
          else {
             mSelIndex = -1;
@@ -1903,6 +1933,8 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
                mCurrentCursorPos = mLabels[mSelIndex]->title.Length();
                //Set the selection region to be equal to the selection bounds of the tabbed-to label.
                newSel = mLabels[mSelIndex]->selectedRegion;
+
+               trackPanel->ToScreenReader(mLabels[mSelIndex]->title + wxT(" ") + _("Edit"));
             }
             else {
                mSelIndex = -1;
@@ -1928,6 +1960,9 @@ bool LabelTrack::OnKeyDown(SelectedRegion &newSel, wxKeyEvent & event)
 /// by OnKeyDown.
 bool LabelTrack::OnChar(SelectedRegion &WXUNUSED(newSel), wxKeyEvent & event)
 {
+   TrackPanel *trackPanel = GetActiveProject()->GetTrackPanel();
+   bool newLabel = false;
+
    // Check for modifiers and only allow shift.
    //
    // We still need to check this or we will eat the top level menu accelerators
@@ -1961,6 +1996,7 @@ bool LabelTrack::OnChar(SelectedRegion &WXUNUSED(newSel), wxKeyEvent & event)
       AudacityProject *p = GetActiveProject();
       AddLabel(p->mViewInfo.selectedRegion);
       p->PushState(_("Added label"), _("Label"));
+      newLabel = true;
    }
 
    //
@@ -1994,6 +2030,11 @@ bool LabelTrack::OnChar(SelectedRegion &WXUNUSED(newSel), wxKeyEvent & event)
 
    // Make sure the caret is visible
    mDrawCursor = true;
+
+   // screen reader read
+
+   if (newLabel)
+      trackPanel->ToScreenReader(_("new label") + wxT(" ") + charCode);
 
    return updated;
 }

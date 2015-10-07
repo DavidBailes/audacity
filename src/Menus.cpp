@@ -1217,6 +1217,13 @@ void AudacityProject::CreateMenusAndCommands()
       wxT("F11"));
 #endif
 
+   c->AddCommand(wxT("ReadZoomStepSize"), _("Read zoom step size"), FN(ReadZoomStepSize), wxT("Ctrl+4"));
+   c->AddCommand(wxT("ReadTrackInfo"), _("Read track info"), FN(ReadTrackInfo), wxT("Ctrl+5"));
+   c->AddCommand(wxT("ReadSelectionStart"), _("Read selection start"), FN(ReadSelectionStart), wxT("Ctrl+6"));
+   c->AddCommand(wxT("ReadSelectionEnd"), _("Read selection end"), FN(ReadSelectionEnd), wxT("Ctrl+7"));
+   c->AddCommand(wxT("ReadSelectionLength"), _("Read selection length"), FN(ReadSelectionLength), wxT("Ctrl+8"));
+
+
    c->AddCommand(wxT("InputDevice"), _("Change recording device"), FN(OnInputDevice), wxT("Shift+I"),
                  AudioIONotBusyFlag,
                  AudioIONotBusyFlag);
@@ -6750,6 +6757,34 @@ void AudacityProject::OnFullScreen()
       wxTopLevelWindow::ShowFullScreen(false);
    else
       wxTopLevelWindow::ShowFullScreen(true);
+}
+
+
+void AudacityProject::ReadZoomStepSize()
+{
+   mTrackPanel->ReadZoomStepSize();
+}
+
+void AudacityProject::ReadTrackInfo()
+{
+   mTrackPanel->ReadTrackInfo();
+}
+
+void AudacityProject::ReadSelectionStart()
+{
+   mTrackPanel->ReadTime(_("start"), mViewInfo.selectedRegion.t0());
+}
+
+void AudacityProject::ReadSelectionEnd()
+{
+   mTrackPanel->ReadTime(_("end"), mViewInfo.selectedRegion.t1());
+}
+
+void AudacityProject::ReadSelectionLength()
+{
+   // this is probably not exactly right - see void SelectionBar::ValuesToControls()
+   //- but good enough for initial testing of idea
+   mTrackPanel->ReadTime(_("length"), mViewInfo.selectedRegion.duration());
 }
 
 void AudacityProject::OnCursorLeft(bool shift, bool ctrl, bool keyup)
