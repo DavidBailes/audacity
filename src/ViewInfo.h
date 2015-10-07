@@ -75,6 +75,7 @@ public:
 
    // There is NO GetZoom()!
    // Use TimeToPosition and PositionToTime and OffsetTimeByPixels!
+   double GetZoom() const {return zoom;}  // there is now!
 
    // Limits zoom to certain bounds
    void SetZoom(double pixelsPerSecond);

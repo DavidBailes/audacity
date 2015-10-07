@@ -179,6 +179,14 @@ void OnSnapToNearest();
 void OnSnapToPrior();
 void OnFullScreen();
 
+      // Screen reader commands
+
+void ReadZoomStepSize();
+void ReadTrackInfo();
+void ReadSelectionStart();
+void ReadSelectionEnd();
+void ReadSelectionLength();
+
         // File Menu
 
 void OnNew();

@@ -41,6 +41,11 @@ public:
    // Called to signal changes to a track
    void Updated();
 
+   void ToScreenReader(const wxString &);
+   void ReadTrackInfo();
+   void ReadZoomStepSize();
+   void ReadTime(const wxString& name, double time);
+
 #if wxUSE_ACCESSIBILITY
    // Retrieves the address of an IDispatch interface for the specified child.
    // All objects must support this property.
@@ -108,6 +113,9 @@ private:
 
    TrackPanel *mTrackPanel;
    Track *mFocusedTrack;
+
+   wxString mDescription;
+   bool mNotifyDescriptionClear;
 };
 
 #endif // __AUDACITY_TRACK_PANEL_ACCESSIBILITY__

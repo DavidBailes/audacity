@@ -278,6 +278,8 @@ class AUDACITY_DLL_API LabelTrack : public Track
    void calculateFontHeight(wxDC & dc);
    void RemoveSelectedText();
 
+   void CharToScreenReader(int position);
+
    bool mIsAdjustingLabel;
    bool mbIsMoving;
 

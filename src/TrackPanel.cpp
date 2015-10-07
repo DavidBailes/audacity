@@ -2907,6 +2907,30 @@ void TrackPanel::UpdateAccessibility()
       mAx->Updated();
 }
 
+void TrackPanel::ToScreenReader(const wxString& readString)
+{
+   if (mAx)
+      mAx->ToScreenReader(readString);
+}
+
+void TrackPanel::ReadZoomStepSize()
+{
+   if (mAx)
+      mAx->ReadZoomStepSize();
+}
+
+void TrackPanel::ReadTrackInfo()
+{
+   if (mAx)
+      mAx->ReadTrackInfo();
+}
+
+void TrackPanel::ReadTime(const wxString& name, double time)
+{
+   if (mAx)
+      mAx->ReadTime(name, time);
+}
+
 #ifdef EXPERIMENTAL_SPECTRAL_EDITING
 namespace {
    

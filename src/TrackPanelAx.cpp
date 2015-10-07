@@ -16,6 +16,9 @@
 
 #include "Audacity.h"
 #include "TrackPanelAx.h"
+#include "Track.h"
+#include "Project.h"
+#include "WaveTrack.h"
 
 // For compilers that support precompilation, includes "wx/wx.h".
 #include <wx/wxprec.h>
@@ -27,8 +30,8 @@
 
 
 #include <wx/intl.h>
+#include <wx/regex.h>
 
-#include "Track.h"
 
 TrackPanelAx::TrackPanelAx( wxWindow *window )
 #if wxUSE_ACCESSIBILITY
@@ -37,6 +40,8 @@ TrackPanelAx::TrackPanelAx( wxWindow *window )
 {
    mTrackPanel = wxDynamicCast( window, TrackPanel );
    mFocusedTrack = NULL;
+
+   mNotifyDescriptionClear = false;
 }
 
 TrackPanelAx::~TrackPanelAx()
@@ -174,6 +179,104 @@ void TrackPanelAx::Updated()
 #endif
 }
 
+void TrackPanelAx::ToScreenReader(const wxString& readString)
+{
+#if wxUSE_ACCESSIBILITY
+   if (mTrackPanel == wxWindow::FindFocus())
+   {
+      Track *t = GetFocus();
+      int childId = t ? TrackNum(t) : 0;
+
+      mDescription = readString;
+      mNotifyDescriptionClear = true;
+      NotifyEvent(wxACC_EVENT_OBJECT_DESCRIPTIONCHANGE,
+               mTrackPanel,
+               wxOBJID_CLIENT,
+               childId);
+   }
+
+#endif
+}
+
+void TrackPanelAx::ReadTrackInfo()
+{
+#if wxUSE_ACCESSIBILITY
+   Track *t = GetFocus();
+   if (t)
+   {
+      wxString info;
+      if (t->GetKind() == Track::Wave)
+      {
+         if (t->GetLinked())
+            info = _("stereo");
+         else if (t->GetChannel() == Track::MonoChannel)
+            info = _("mono");
+         else if (t->GetChannel() == Track::LeftChannel)
+            info = _("left");
+         else if (t->GetChannel() == Track::RightChannel)
+            info = _("right");
+
+         WaveTrack *wt = dynamic_cast<WaveTrack*>(t);
+
+         wxString rate;
+         rate.Printf(wxT("%dHz"), int(wt->GetRate() + 0.5) );
+         info += wxT(" ") + rate;
+
+         wxString format = GetSampleFormatStr(wt->GetSampleFormat());
+         info += wxT(" ") + format;
+
+      }
+
+      ToScreenReader(info);
+   }
+
+#endif
+}
+
+void TrackPanelAx::ReadZoomStepSize()
+{
+#if wxUSE_ACCESSIBILITY
+   wxString stepSizeString;
+   double stepSize = 0.0;
+
+   double pixelsPerSecond = mTrackPanel->mViewInfo->GetZoom();
+   if (pixelsPerSecond != 0.0)
+      stepSize = 1.0/pixelsPerSecond;
+
+   int stepSizeMs = round(1000*stepSize);
+   stepSizeString.Printf(wxT("%s %d %s"), _("step size"), stepSizeMs, _("milli seconds"));
+   ToScreenReader(stepSizeString);
+#endif
+}
+
+void TrackPanelAx::ReadTime(const wxString& name, double time)
+{
+#if wxUSE_ACCESSIBILITY
+   AudacityProject *proj = GetActiveProject();
+   NumericConverter nc(NumericConverter::TIME, proj->GetSelectionFormat(), time, proj->GetRate());
+   wxString timeString = nc.GetString();
+
+   wxRegEx nonZero = "[1-9]";
+   if (nonZero.Matches(timeString))
+   {
+      wxRegEx leadingZeros = "[0,]*(([1-9][0-9]*|0)\\.*[0-9]*)";
+      leadingZeros.Replace(&timeString, wxT("\\1"));
+
+      wxRegEx leadingZeroSections = "[^1-9.]*(.+)";
+      leadingZeroSections.Replace(&timeString, wxT("\\1"));
+
+      if (timeString.length() > 0 && timeString[0] == '.')
+         timeString.Prepend(wxT("0"));
+   }
+   else
+      timeString = wxT("0");
+
+
+   ToScreenReader(name + wxT(" ") + timeString);
+
+#endif
+}
+
 #if wxUSE_ACCESSIBILITY
 
 // Retrieves the address of an IDispatch interface for the specified child.
@@ -230,9 +333,19 @@ wxAccStatus TrackPanelAx::GetDefaultAction( int WXUNUSED(childId), wxString *act
 }
 
 // Returns the description for this object or a child.
-wxAccStatus TrackPanelAx::GetDescription( int WXUNUSED(childId), wxString *description )
+wxAccStatus TrackPanelAx::GetDescription( int childId, wxString *description )
 {
-   description->Clear();
+   *description = mDescription;
+   mDescription.clear();
+
+   if (mNotifyDescriptionClear)
+   {
+      mNotifyDescriptionClear = false;
+      NotifyEvent(wxACC_EVENT_OBJECT_DESCRIPTIONCHANGE,
+               mTrackPanel,
+               wxOBJID_CLIENT,
+               childId);
+   }
 
    return wxACC_OK;
 }

@@ -339,6 +339,10 @@ protected:
 
 public:
    virtual void UpdateAccessibility();
+   void ReadZoomStepSize();
+   void ReadTrackInfo();
+   void ReadTime(const wxString& name, double time);
+   void ToScreenReader(const wxString &);
 
 #ifdef EXPERIMENTAL_SPECTRAL_EDITING
 public:
