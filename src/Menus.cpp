@@ -1222,6 +1222,7 @@ void AudacityProject::CreateMenusAndCommands()
    c->AddCommand(wxT("ReadSelectionStart"), _("Read selection start"), FN(ReadSelectionStart), wxT("Ctrl+6"));
    c->AddCommand(wxT("ReadSelectionEnd"), _("Read selection end"), FN(ReadSelectionEnd), wxT("Ctrl+7"));
    c->AddCommand(wxT("ReadSelectionLength"), _("Read selection length"), FN(ReadSelectionLength), wxT("Ctrl+8"));
+   c->AddCommand(wxT("ReadAudioPosition"), _("Read audio position"), FN(ReadAudioPosition), wxT("Ctrl+9"));
 
 
    c->AddCommand(wxT("InputDevice"), _("Change recording device"), FN(OnInputDevice), wxT("Shift+I"),
@@ -6785,6 +6786,18 @@ void AudacityProject::ReadSelectionLength()
    // this is probably not exactly right - see void SelectionBar::ValuesToControls()
    //- but good enough for initial testing of idea
    mTrackPanel->ReadTime(_("length"), mViewInfo.selectedRegion.duration());
+}
+
+void AudacityProject::ReadAudioPosition()
+{
+   double audioTime;
+
+   if (gAudioIO->IsBusy())
+      audioTime = gAudioIO->GetStreamTime();
+   else {
+      audioTime = 0;
+   }
+   mTrackPanel->ReadTime(_("audio"), audioTime);
 }
 
 void AudacityProject::OnCursorLeft(bool shift, bool ctrl, bool keyup)

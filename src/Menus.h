@@ -186,6 +186,7 @@ void ReadTrackInfo();
 void ReadSelectionStart();
 void ReadSelectionEnd();
 void ReadSelectionLength();
+void ReadAudioPosition();
 
         // File Menu
 
