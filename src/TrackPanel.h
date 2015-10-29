@@ -342,6 +342,8 @@ public:
    void ReadZoomStepSize();
    void ReadTrackInfo();
    void ReadTime(const wxString& name, double time);
+   void ReadTrackGain();
+   void ReadTrackPan();
    void ToScreenReader(const wxString &);
 
 #ifdef EXPERIMENTAL_SPECTRAL_EDITING

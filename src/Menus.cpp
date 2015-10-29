@@ -2876,6 +2876,8 @@ void AudacityProject::OnTrackPanLeft()
       (static_cast<WaveTrack*>(track));
    slider->Decrease(1);
    SetTrackPan(track, slider);
+
+   mTrackPanel->ReadTrackPan();
 }
 
 void AudacityProject::OnTrackPanRight()
@@ -2889,6 +2891,8 @@ void AudacityProject::OnTrackPanRight()
       (static_cast<WaveTrack*>(track));
    slider->Increase(1);
    SetTrackPan(track, slider);
+
+   mTrackPanel->ReadTrackPan();
 }
 
 void AudacityProject::OnTrackGain()
@@ -2917,6 +2921,8 @@ void AudacityProject::OnTrackGainInc()
       (static_cast<WaveTrack*>(track));
    slider->Increase(1);
    SetTrackGain(track, slider);
+
+   mTrackPanel->ReadTrackGain();
 }
 
 void AudacityProject::OnTrackGainDec()
@@ -2930,6 +2936,8 @@ void AudacityProject::OnTrackGainDec()
       (static_cast<WaveTrack*>(track));
    slider->Decrease(1);
    SetTrackGain(track, slider);
+
+   mTrackPanel->ReadTrackGain();
 }
 
 void AudacityProject::OnTrackMenu()

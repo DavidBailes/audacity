@@ -2931,6 +2931,18 @@ void TrackPanel::ReadTime(const wxString& name, double time)
       mAx->ReadTime(name, time);
 }
 
+void TrackPanel::ReadTrackGain()
+{
+   if (mAx)
+      mAx->ReadTrackGain();
+}
+
+void TrackPanel::ReadTrackPan()
+{
+   if (mAx)
+      mAx->ReadTrackPan();
+}
+
 #ifdef EXPERIMENTAL_SPECTRAL_EDITING
 namespace {
    

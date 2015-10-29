@@ -277,6 +277,36 @@ void TrackPanelAx::ReadTime(const wxString& name, double time)
 #endif
 }
 
+void TrackPanelAx::ReadTrackGain()
+{
+#if wxUSE_ACCESSIBILITY
+   Track *t = GetFocus();
+   if (t && t->GetKind() == Track::Wave)
+   {
+      float gain = static_cast<WaveTrack*>(t)->GetGain();
+      wxString gainInfo;
+      gainInfo.Printf(wxT("%.0f db"), LINEAR_TO_DB(gain));
+      ToScreenReader(gainInfo);
+   }
+
+#endif
+}
+
+void TrackPanelAx::ReadTrackPan()
+{
+#if wxUSE_ACCESSIBILITY
+   Track *t = GetFocus();
+   if (t && t->GetKind() == Track::Wave)
+   {
+      float pan = static_cast<WaveTrack*>(t)->GetPan();
+      wxString panInfo;
+      panInfo.Printf(wxT("%.1f %s"), pan, _("pan"));
+      ToScreenReader(panInfo);
+   }
+
+#endif
+}
+
 #if wxUSE_ACCESSIBILITY
 
 // Retrieves the address of an IDispatch interface for the specified child.

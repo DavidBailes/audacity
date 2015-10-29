@@ -45,6 +45,8 @@ public:
    void ReadTrackInfo();
    void ReadZoomStepSize();
    void ReadTime(const wxString& name, double time);
+   void ReadTrackGain();
+   void ReadTrackPan();
 
 #if wxUSE_ACCESSIBILITY
    // Retrieves the address of an IDispatch interface for the specified child.
