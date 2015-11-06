@@ -65,7 +65,7 @@ public:
    virtual wxAccStatus GetDefaultAction( int childId, wxString *actionName );
 
    // Returns the description for this object or a child.
-   virtual wxAccStatus GetDescription( int childId, wxString *description );
+   virtual wxAccStatus GetDescription( int WXUNUSED(childId), wxString *description );
 
    // Gets the window with the keyboard focus.
    // If childId is 0 and child is NULL, no object in
@@ -116,8 +116,9 @@ private:
    TrackPanel *mTrackPanel;
    Track *mFocusedTrack;
 
-   wxString mDescription;
-   bool mNotifyDescriptionClear;
+   wxString mName;
+   bool mTrackName;
+   int mNameCount;
 };
 
 #endif // __AUDACITY_TRACK_PANEL_ACCESSIBILITY__

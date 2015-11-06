@@ -41,7 +41,8 @@ TrackPanelAx::TrackPanelAx( wxWindow *window )
    mTrackPanel = wxDynamicCast( window, TrackPanel );
    mFocusedTrack = NULL;
 
-   mNotifyDescriptionClear = false;
+   mTrackName = true;
+   mNameCount = 0;
 }
 
 TrackPanelAx::~TrackPanelAx()
@@ -90,6 +91,7 @@ void TrackPanelAx::SetFocus( Track *track )
    {
       int num = TrackNum( mFocusedTrack );
 
+      mTrackName = true;
       NotifyEvent( wxACC_EVENT_OBJECT_FOCUS,
                    mTrackPanel,
                    wxOBJID_CLIENT,
@@ -169,6 +171,7 @@ void TrackPanelAx::Updated()
 {
 #if wxUSE_ACCESSIBILITY
    Track *t = GetFocus();
+   mTrackName = true;
 
    // logically, this should be an OBJECT_NAMECHANGE event, but Window eyes 9.1
    // does not read out the name with this event type, hence use OBJECT_FOCUS.
@@ -187,9 +190,16 @@ void TrackPanelAx::ToScreenReader(const wxString& readString)
       Track *t = GetFocus();
       int childId = t ? TrackNum(t) : 0;
 
-      mDescription = readString;
-      mNotifyDescriptionClear = true;
-      NotifyEvent(wxACC_EVENT_OBJECT_DESCRIPTIONCHANGE,
+      mName = readString;
+
+      // append \a alernatively, so that the string is never the same as the previous string.
+      // This ensures that screen readers read it.
+      if (mNameCount % 2 == 0)
+         mName.Append('\a');
+      mNameCount++;
+
+      mTrackName = false;
+      NotifyEvent(wxACC_EVENT_OBJECT_FOCUS,
                mTrackPanel,
                wxOBJID_CLIENT,
                childId);
@@ -363,19 +373,9 @@ wxAccStatus TrackPanelAx::GetDefaultAction( int WXUNUSED(childId), wxString *act
 }
 
 // Returns the description for this object or a child.
-wxAccStatus TrackPanelAx::GetDescription( int childId, wxString *description )
+wxAccStatus TrackPanelAx::GetDescription( int WXUNUSED(childId), wxString *description )
 {
-   *description = mDescription;
-   mDescription.clear();
-
-   if (mNotifyDescriptionClear)
-   {
-      mNotifyDescriptionClear = false;
-      NotifyEvent(wxACC_EVENT_OBJECT_DESCRIPTIONCHANGE,
-               mTrackPanel,
-               wxOBJID_CLIENT,
-               childId);
-   }
+   description->Clear();
 
    return wxACC_OK;
 }
@@ -428,81 +428,88 @@ wxAccStatus TrackPanelAx::GetLocation( wxRect& rect, int elementId )
 wxAccStatus TrackPanelAx::GetName( int childId, wxString* name )
 {
 #if defined(__WXMSW__)
-   if( childId == wxACC_SELF )
+   if (mTrackName)
    {
-      *name = _( "TrackView" );
-   }
-   else
-   {
-      Track *t = FindTrack( childId );
-
-      if( t == NULL )
+      if( childId == wxACC_SELF )
       {
-         return wxACC_FAIL;
+         *name = _( "TrackView" );
       }
       else
       {
-         *name = t->GetName();
-         if( *name == t->GetDefaultName() )
-         {
-            /* i18n-hint: The %d is replaced by th enumber of the track.*/
-            name->Printf(_("Track %d"), TrackNum( t ) );
-         }
+         Track *t = FindTrack( childId );
 
-         if (t->GetKind() == Track::Label)
+         if( t == NULL )
          {
-            /* i18n-hint: This is for screen reader software and indicates that
-               this is a Label track.*/
-            name->Append( wxT(" ") + wxString(_("Label Track")));
+            return wxACC_FAIL;
          }
-         else if (t->GetKind() == Track::Time)
+         else
          {
-            /* i18n-hint: This is for screen reader software and indicates that
-               this is a Time track.*/
-            name->Append( wxT(" ") + wxString(_("Time Track")));
-         }
-         else if (t->GetKind() == Track::Note)
-         {
-            /* i18n-hint: This is for screen reader software and indicates that
-               this is a Note track.*/
-            name->Append( wxT(" ") + wxString(_("Note Track")));
-         }
+            *name = t->GetName();
+            if( *name == t->GetDefaultName() )
+            {
+               /* i18n-hint: The %d is replaced by th enumber of the track.*/
+               name->Printf(_("Track %d"), TrackNum( t ) );
+            }
 
-         // LLL: Remove these during "refactor"
-         if( t->GetMute() )
-         {
-            // The following comment also applies to the solo, selected,
-            // and synclockselected states.
-            // Many of translations of the strings with a leading space omitted
-            // the leading space. Therefore a space has been added using wxT(" ").
-            // Because screen readers won't be affected by multiple spaces, the
-            // leading spaces have not been removed, so that no new translations are needed.
-            /* i18n-hint: This is for screen reader software and indicates that
-               on this track mute is on.*/
-            name->Append( wxT(" ") + wxString(_( " Mute On" )) );
-         }
+            if (t->GetKind() == Track::Label)
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  this is a Label track.*/
+               name->Append( wxT(" ") + wxString(_("Label Track")));
+            }
+            else if (t->GetKind() == Track::Time)
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  this is a Time track.*/
+               name->Append( wxT(" ") + wxString(_("Time Track")));
+            }
+            else if (t->GetKind() == Track::Note)
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  this is a Note track.*/
+               name->Append( wxT(" ") + wxString(_("Note Track")));
+            }
 
-         if( t->GetSolo() )
-         {
-            /* i18n-hint: This is for screen reader software and indicates that
-               on this track solo is on.*/
-            name->Append( wxT(" ") + wxString(_( " Solo On" )) );
-         }
-         if( t->GetSelected() )
-         {
-            /* i18n-hint: This is for screen reader software and indicates that
-               this track is selected.*/
-            name->Append( wxT(" ") + wxString(_( " Select On" )) );
-         }
-         if( t->IsSyncLockSelected() )
-         {
-            /* i18n-hint: This is for screen reader software and indicates that
-               this track is shown with a sync-locked icon.*/
-            // The absence of a dash between Sync and Locked is deliberate -
-            // if present, Jaws reads it as "dash".
-            name->Append( wxT(" ") + wxString(_( " Sync Lock Selected" )) );
+            // LLL: Remove these during "refactor"
+            if( t->GetMute() )
+            {
+               // The following comment also applies to the solo, selected,
+               // and synclockselected states.
+               // Many of translations of the strings with a leading space omitted
+               // the leading space. Therefore a space has been added using wxT(" ").
+               // Because screen readers won't be affected by multiple spaces, the
+               // leading spaces have not been removed, so that no new translations are needed.
+               /* i18n-hint: This is for screen reader software and indicates that
+                  on this track mute is on.*/
+               name->Append( wxT(" ") + wxString(_( " Mute On" )) );
+            }
+
+            if( t->GetSolo() )
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  on this track solo is on.*/
+               name->Append( wxT(" ") + wxString(_( " Solo On" )) );
+            }
+            if( t->GetSelected() )
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  this track is selected.*/
+               name->Append( wxT(" ") + wxString(_( " Select On" )) );
+            }
+            if( t->IsSyncLockSelected() )
+            {
+               /* i18n-hint: This is for screen reader software and indicates that
+                  this track is shown with a sync-locked icon.*/
+               // The absence of a dash between Sync and Locked is deliberate -
+               // if present, Jaws reads it as "dash".
+               name->Append( wxT(" ") + wxString(_( " Sync Lock Selected" )) );
+            }
          }
       }
+   }
+   else
+   {
+      *name = mName;
    }
 
    return wxACC_OK;
@@ -517,13 +524,20 @@ wxAccStatus TrackPanelAx::GetName( int childId, wxString* name )
 wxAccStatus TrackPanelAx::GetRole( int childId, wxAccRole* role )
 {
 #if defined(__WXMSW__)
-   if( childId == wxACC_SELF )
+   if (mTrackName)
    {
-      *role = wxROLE_SYSTEM_TABLE;
+      if( childId == wxACC_SELF )
+      {
+         *role = wxROLE_SYSTEM_TABLE;
+      }
+      else
+      {
+         *role = wxROLE_SYSTEM_ROW;
+      }
    }
    else
    {
-      *role = wxROLE_SYSTEM_ROW;
+      *role = wxROLE_NONE;
    }
 #endif
 
@@ -570,7 +584,7 @@ wxAccStatus TrackPanelAx::GetState( int childId, long* state )
             *state |= wxACC_STATE_SYSTEM_FOCUSED;
          }
 
-         if( t->GetSelected() )
+         if( t->GetSelected() && mTrackName)
          {
             *state |= wxACC_STATE_SYSTEM_SELECTED;
          }
