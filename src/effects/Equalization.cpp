@@ -176,6 +176,294 @@ Param( dBMax,        float,   wxT(""),                   30.0,    0.0,     60.0,
 WX_DEFINE_OBJARRAY( EQPointArray );
 WX_DEFINE_OBJARRAY( EQCurveArray );
 
+
+class JSlider final : public wxWindow
+{
+public:
+   JSlider (wxWindow *parent, wxWindowID id, int value, int minValue, int maxValue,
+      const wxPoint &pos=wxDefaultPosition, const wxSize &size=wxDefaultSize, long style=wxSL_HORIZONTAL );
+
+   int 	GetValue () const { return slider->GetValue(); }
+   void 	SetValue (int value) { slider->SetValue(value); };
+   int GetMin() const { return slider->GetMin(); }
+   int GetMax() const { return slider->GetMax(); }
+
+private:
+   wxSlider *slider;
+};
+
+JSlider::JSlider (wxWindow *parent, wxWindowID id, int value, int minValue, int maxValue,
+      const wxPoint &pos, const wxSize &size, long style ) :
+      wxWindow(parent, wxID_ANY, pos, size, 0L)
+{
+   slider = safenew wxSlider(this, id, value, minValue, maxValue, pos, size, style);
+
+}
+
+#if wxUSE_ACCESSIBILITY
+
+class JSliderAx final : public wxWindowAccessible
+{
+public:
+   JSliderAx(wxWindow * window, const wxString &fmt);
+
+   virtual ~ JSliderAx();
+
+   // Retrieves the address of an IDispatch interface for the specified child.
+   // All objects must support this property.
+   wxAccStatus GetChild(int childId, wxAccessible** child) override;
+
+   // Gets the number of children.
+   wxAccStatus GetChildCount(int* childCount) override;
+
+   // Gets the default action for this object (0) or > 0 (the action for a child).
+   // Return wxACC_OK even if there is no action. actionName is the action, or the empty
+   // string if there is no action.
+   // The retrieved string describes the action that is performed on an object,
+   // not what the object does as a result. For example, a toolbar button that prints
+   // a document has a default action of "Press" rather than "Prints the current document."
+   wxAccStatus GetDefaultAction(int childId, wxString *actionName) override;
+
+   // Returns the description for this object or a child.
+   wxAccStatus GetDescription(int childId, wxString *description) override;
+
+   // Gets the window with the keyboard focus.
+   // If childId is 0 and child is NULL, no object in
+   // this subhierarchy has the focus.
+   // If this object has the focus, child should be 'this'.
+   wxAccStatus GetFocus(int *childId, wxAccessible **child) override;
+
+   // Returns help text for this object or a child, similar to tooltip text.
+   wxAccStatus GetHelpText(int childId, wxString *helpText) override;
+
+   // Returns the keyboard shortcut for this object or child.
+   // Return e.g. ALT+K
+   wxAccStatus GetKeyboardShortcut(int childId, wxString *shortcut) override;
+
+   // Returns the rectangle for this object (id = 0) or a child element (id > 0).
+   // rect is in screen coordinates.
+   wxAccStatus GetLocation(wxRect& rect, int elementId) override;
+
+   // Gets the name of the specified object.
+   wxAccStatus GetName(int childId, wxString *name) override;
+
+   // Returns a role constant.
+   wxAccStatus GetRole(int childId, wxAccRole *role) override;
+
+   // Gets a variant representing the selected children
+   // of this object.
+   // Acceptable values:
+   // - a null variant (IsNull() returns TRUE)
+   // - a list variant (GetType() == wxT("list"))
+   // - an integer representing the selected child element,
+   //   or 0 if this object is selected (GetType() == wxT("long"))
+   // - a "void*" pointer to a wxAccessible child object
+   wxAccStatus GetSelections(wxVariant *selections) override;
+
+   // Returns a state constant.
+   wxAccStatus GetState(int childId, long* state) override;
+
+   // Returns a localized string representing the value for the object
+   // or child.
+   wxAccStatus GetValue(int childId, wxString* strValue) override;
+
+private:
+   wxWindow *mParent;
+   wxString mFmt;
+};
+
+JSliderAx::JSliderAx(wxWindow * window, const wxString &fmt) :
+wxWindowAccessible( window )
+{
+   mParent = window;
+   mFmt = fmt;
+}
+
+JSliderAx::~JSliderAx()
+{
+}
+
+// Retrieves the address of an IDispatch interface for the specified child.
+// All objects must support this property.
+wxAccStatus JSliderAx::GetChild( int childId, wxAccessible** child )
+{
+   if( childId == wxACC_SELF )
+   {
+      *child = this;
+   }
+   else
+   {
+      *child = NULL;
+   }
+
+   return wxACC_OK;
+}
+
+// Gets the number of children.
+wxAccStatus JSliderAx::GetChildCount(int* childCount)
+{
+   *childCount = 3;
+
+   return wxACC_OK;
+}
+
+// Gets the default action for this object (0) or > 0 (the action for a child).
+// Return wxACC_OK even if there is no action. actionName is the action, or the empty
+// string if there is no action.
+// The retrieved string describes the action that is performed on an object,
+// not what the object does as a result. For example, a toolbar button that prints
+// a document has a default action of "Press" rather than "Prints the current document."
+wxAccStatus JSliderAx::GetDefaultAction( int WXUNUSED(childId), wxString *actionName )
+{
+   actionName->Clear();
+
+   return wxACC_OK;
+}
+
+// Returns the description for this object or a child.
+wxAccStatus JSliderAx::GetDescription( int WXUNUSED(childId), wxString *description )
+{
+   description->Clear();
+
+   return wxACC_OK;
+}
+
+// Gets the window with the keyboard focus.
+// If childId is 0 and child is NULL, no object in
+// this subhierarchy has the focus.
+// If this object has the focus, child should be 'this'.
+wxAccStatus JSliderAx::GetFocus(int* childId, wxAccessible** child)
+{
+   *childId = 0;
+   *child = this;
+
+   return wxACC_OK;
+}
+
+// Returns help text for this object or a child, similar to tooltip text.
+wxAccStatus JSliderAx::GetHelpText( int WXUNUSED(childId), wxString *helpText )
+{
+   helpText->Clear();
+
+   return wxACC_OK;
+}
+
+// Returns the keyboard shortcut for this object or child.
+// Return e.g. ALT+K
+wxAccStatus JSliderAx::GetKeyboardShortcut( int WXUNUSED(childId), wxString *shortcut )
+{
+   shortcut->Clear();
+
+   return wxACC_OK;
+}
+
+// Returns the rectangle for this object (id = 0) or a child element (id > 0).
+// rect is in screen coordinates.
+wxAccStatus JSliderAx::GetLocation( wxRect& rect, int WXUNUSED(elementId) )
+{
+   JSlider *s = wxDynamicCast( GetWindow(), JSlider );
+
+   rect = s->GetRect();
+   rect.SetPosition( s->GetParent()->ClientToScreen( rect.GetPosition() ) );
+
+   return wxACC_OK;
+}
+
+// Gets the name of the specified object.
+wxAccStatus JSliderAx::GetName(int WXUNUSED(childId), wxString* name)
+{
+   JSlider *s = wxDynamicCast( GetWindow(), JSlider );
+
+   *name = s->GetName();
+
+   return wxACC_OK;
+}
+
+// Returns a role constant.
+wxAccStatus JSliderAx::GetRole(int childId, wxAccRole* role)
+{
+   switch( childId )
+   {
+   case 0:
+      *role = wxROLE_SYSTEM_SLIDER;
+      break;
+
+   case 1:
+   case 3:
+      *role = wxROLE_SYSTEM_PUSHBUTTON;
+      break;
+
+   case 2:
+      *role = wxROLE_SYSTEM_INDICATOR;
+      break;
+   }
+
+   return wxACC_OK;
+}
+
+// Gets a variant representing the selected children
+// of this object.
+// Acceptable values:
+// - a null variant (IsNull() returns TRUE)
+// - a list variant (GetType() == wxT("list"))
+// - an integer representing the selected child element,
+//   or 0 if this object is selected (GetType() == wxT("long"))
+// - a "void*" pointer to a wxAccessible child object
+wxAccStatus JSliderAx::GetSelections( wxVariant * WXUNUSED(selections) )
+{
+   return wxACC_NOT_IMPLEMENTED;
+}
+
+// Returns a state constant.
+wxAccStatus JSliderAx::GetState(int childId, long* state)
+{
+   JSlider *s = wxDynamicCast( GetWindow(), JSlider );
+
+   switch( childId )
+   {
+   case 0:
+      *state = wxACC_STATE_SYSTEM_FOCUSABLE;
+      break;
+
+   case 1:
+      if( s->GetValue() == s->GetMin() )
+      {
+         *state = wxACC_STATE_SYSTEM_INVISIBLE;
+      }
+      break;
+
+   case 3:
+      if( s->GetValue() == s->GetMax() )
+      {
+         *state = wxACC_STATE_SYSTEM_INVISIBLE;
+      }
+      break;
+   }
+
+   // Do not use mSliderIsFocused is not set until after this method
+   // is called.
+   *state |= ( s == wxWindow::FindFocus() ? wxACC_STATE_SYSTEM_FOCUSED : 0 );
+
+   return wxACC_OK;
+}
+
+// Returns a localized string representing the value for the object
+// or child.
+wxAccStatus JSliderAx::GetValue(int childId, wxString* strValue)
+{
+   JSlider *s = wxDynamicCast( GetWindow(), JSlider );
+
+   if( childId == 0 )
+   {
+      strValue->Printf( mFmt, s->GetValue() );
+
+      return wxACC_OK;
+   }
+
+   return wxACC_NOT_SUPPORTED;
+}
+
+#endif // wxUSE_ACCESSIBILITY
 ///----------------------------------------------------------------------------
 // EffectEqualization
 //----------------------------------------------------------------------------
@@ -721,7 +1009,7 @@ void EffectEqualization::PopulateOrExchange(ShuttleGui & S)
 
          for (int i = 0; (i < NUMBER_OF_BANDS) && (kThirdOct[i] <= mHiFreq); ++i)
          {
-            mSliders[i] = safenew wxSlider(mGraphicPanel, ID_Slider + i, 0, -20, +20,
+            mSliders[i] = safenew JSlider(mGraphicPanel, ID_Slider + i, 0, -20, +20,
                wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL | wxSL_INVERSE);
 
             mSliders[i]->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(EffectEqualization::OnErase));
@@ -732,7 +1020,7 @@ void EffectEqualization::PopulateOrExchange(ShuttleGui & S)
             else
                name.Printf(wxString(wxT("%g ")) + _("kHz"), kThirdOct[i]/1000.);
             mSliders[i]->SetName(name);
-            mSliders[i]->SetAccessible(safenew SliderAx(mSliders[i], wxString(wxT("%d ")) + _("dB")));
+            mSliders[i]->SetAccessible(safenew JSliderAx(mSliders[i], wxString(wxT("%d ")) + _("dB")));
 #endif
             mSlidersOld[i] = 0;
             mEQVals[i] = 0.;
@@ -2636,7 +2924,7 @@ void EffectEqualization::OnErase(wxEraseEvent & WXUNUSED(event))
 
 void EffectEqualization::OnSlider(wxCommandEvent & event)
 {
-   wxSlider *s = (wxSlider *)event.GetEventObject();
+   JSlider *s = (JSlider *)event.GetEventObject();
    for (int i = 0; i < mBandsInUse; i++)
    {
       if( s == mSliders[i])

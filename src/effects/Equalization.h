@@ -47,6 +47,7 @@
 
 class Envelope;
 class EqualizationPanel;
+class JSlider;
 
 //
 // One point in a curve
@@ -255,7 +256,7 @@ private:
    wxSlider *mMSlider;
    wxSlider *mdBMinSlider;
    wxSlider *mdBMaxSlider;
-   wxSlider *mSliders[NUMBER_OF_BANDS];
+   JSlider *mSliders[NUMBER_OF_BANDS];
 
    static int wxCMPFUNC_CONV SortCurvesByName (EQCurve **first, EQCurve **second)
    {
