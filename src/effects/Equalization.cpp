@@ -177,6 +177,29 @@ WX_DEFINE_OBJARRAY( EQPointArray );
 WX_DEFINE_OBJARRAY( EQCurveArray );
 
 
+
+class NFSlider final : public wxSlider
+{
+public:
+   NFSlider (wxWindow *parent, wxWindowID id, int value, int minValue, int maxValue,
+      const wxPoint &pos=wxDefaultPosition, const wxSize &size=wxDefaultSize, long style=wxSL_HORIZONTAL ) :
+      wxSlider(parent, id, value, minValue, maxValue, pos, size, style ) {};
+
+   void OnSetFocus(wxFocusEvent & event);
+
+   DECLARE_EVENT_TABLE()
+};
+
+BEGIN_EVENT_TABLE(NFSlider, wxSlider)
+   EVT_SET_FOCUS(NFSlider::OnSetFocus)
+END_EVENT_TABLE()
+
+void NFSlider::OnSetFocus(wxFocusEvent & WXUNUSED(event))
+{
+   wxWindow *parent = GetParent();
+   parent->SetFocus();
+}
+
 class JSlider final : public wxWindow
 {
 public:
@@ -187,13 +210,15 @@ public:
    void 	SetValue (int value) { slider->SetValue(value); };
    int GetMin() const { return slider->GetMin(); }
    int GetMax() const { return slider->GetMax(); }
+   void 	SetToolTip (const wxString &tipString) { slider->SetToolTip(tipString);};
 
    void OnKeyDown(wxKeyEvent & event);
    void AdjustSlider( const wxKeyEvent& event);
    void OnSlider(wxCommandEvent& event);
+   void OnSize(wxSizeEvent & event);
 
 private:
-   wxSlider *slider;
+   NFSlider *slider;
 
    DECLARE_EVENT_TABLE()
 };
@@ -201,14 +226,14 @@ private:
 BEGIN_EVENT_TABLE(JSlider, wxWindow)
    EVT_KEY_DOWN(JSlider::OnKeyDown)
    EVT_SLIDER(wxID_ANY, JSlider::OnSlider)
+   EVT_SIZE(JSlider::OnSize)
 END_EVENT_TABLE()
 
 JSlider::JSlider (wxWindow *parent, wxWindowID id, int value, int minValue, int maxValue,
       const wxPoint &pos, const wxSize &size, long style ) :
       wxWindow(parent, id, pos, size, wxWANTS_CHARS)
 {
-   slider = safenew wxSlider(this, wxID_ANY, value, minValue, maxValue, pos, size, style);
-
+   slider = safenew NFSlider(this, wxID_ANY, value, minValue, maxValue, pos, size, style);
 }
 
 void JSlider::OnKeyDown(wxKeyEvent & event)
@@ -300,6 +325,11 @@ void JSlider::OnSlider(wxCommandEvent& event)
                                     wxOBJID_CLIENT,
                                     wxACC_SELF );
 #endif
+}
+
+void JSlider::OnSize(wxSizeEvent & event)
+{
+   slider->SetSize(event.GetSize());
 }
 
 #if wxUSE_ACCESSIBILITY
