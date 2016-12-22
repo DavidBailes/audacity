@@ -244,6 +244,9 @@ public:
 
    virtual ~ NumericTextCtrlAx();
 
+   void SetFieldFocus();
+   void Updated();
+
    // Performs the default action. childId is 0 (the action for this object)
    // or > 0 (the action for a child).
    // Return wxACC_NOT_SUPPORTED if there is no default action for this
@@ -312,6 +315,7 @@ private:
    NumericTextCtrl *mCtrl;
    int mLastField;
    int mLastDigit;
+   wxString mNameChild;
 };
 
 #endif // wxUSE_ACCESSIBILITY
