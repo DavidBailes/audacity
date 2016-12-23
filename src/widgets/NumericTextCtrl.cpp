@@ -1809,6 +1809,10 @@ void NumericTextCtrl::Updated(bool keyup /* = false */)
 #if wxUSE_ACCESSIBILITY
    if (!keyup) {
       static_cast<NumericTextCtrlAx*>(GetAccessible())->Updated();
+      GetAccessible()->NotifyEvent(wxACC_EVENT_OBJECT_FOCUS,
+                                   this,
+                                   wxOBJID_CLIENT,
+                                   mFocusedDigit + 1);
       GetAccessible()->NotifyEvent(wxACC_EVENT_OBJECT_NAMECHANGE,
                                    this,
                                    wxOBJID_CLIENT,
@@ -1847,7 +1851,6 @@ NumericTextCtrlAx::NumericTextCtrlAx(NumericTextCtrl *ctrl)
 {
    mCtrl = ctrl;
    mLastField = -1;
-   mLastDigit = -1;
 }
 
 NumericTextCtrlAx::~NumericTextCtrlAx()
@@ -1911,13 +1914,11 @@ void NumericTextCtrlAx::SetFieldFocus()
               wxT(", ") +     // comma inserts a slight pause
               mCtrl->GetString().at(mCtrl->mDigits[digit - 1].pos);
       mLastField = field;
-      mLastDigit = digit;
    }
    // The user has moved from one digit to another within a field so
    // just report the digit under the cursor.
-   else if (mLastDigit != digit) {
+   else  {
       mNameChild = mCtrl->GetString().at(mCtrl->mDigits[digit - 1].pos);
-      mLastDigit = digit;
    }
 }
 
@@ -2065,9 +2066,12 @@ wxAccStatus NumericTextCtrlAx::GetName(int childId, wxString *name)
    // The user has moved from one field of the time to another so
    // report the value of the field and the field's label.
 
-   else {
+   else if (childId == mCtrl->GetFocusedDigit() + 1) {
       *name = mNameChild;
-   }   
+   }
+   else {
+      *name = mCtrl->GetString().at(mCtrl->mDigits[childId - 1].pos);
+   }
 
    return wxACC_OK;
 }

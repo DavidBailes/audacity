@@ -314,7 +314,6 @@ public:
 private:
    NumericTextCtrl *mCtrl;
    int mLastField;
-   int mLastDigit;
    wxString mNameChild;
 };
 
