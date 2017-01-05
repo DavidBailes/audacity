@@ -252,6 +252,8 @@ class GridAx final : public wxWindowAccessible
    void SetCurrentCell(int row, int col);
    void TableUpdated();
    bool GetRowCol(int childId, int & row, int & col);
+   void EnableSetCurrentCell() {mSetCurrentCell = true;}
+   void DisableSetCurrentCell() {mSetCurrentCell = false;}
 
    // Retrieves the address of an IDispatch interface for the specified child.
    // All objects must support this property.
@@ -321,6 +323,7 @@ class GridAx final : public wxWindowAccessible
 
    Grid *mGrid;
    int mLastId;
+   bool mSetCurrentCell;
 
 };
 #endif

@@ -440,6 +440,28 @@ void Grid::OnSelectCell(wxGridEvent &event)
 
 void Grid::OnKeyDown(wxKeyEvent &event)
 {
+#if wxUSE_ACCESSIBILITY
+   // Instances of this class disable GridAx::SetCurrentCell() for
+   // the scope of the instance. When the end of an edit of a cell
+   // is confirmed by pressing Tab or Enter, calls to both
+   // OnSelectCell and OnSetFocus are generated, resulting in
+   // two calls to GridAx::SetCurrentCell(). The call to
+   // OnSetFocus is for the cell being edited. Jaws and Window-Eyes
+   // need an additional call to GridAx::SetCurrentCell() so that
+   // the name of the new cell is read. So by default, GridAx::SetCurrentCell()
+   // gets called three times, and NVDA reads out the three names.
+   // An instance of the following class can be used to disable
+   // GridAx::SetCurrentCell() for the first two calls. SetCurrentCell()
+   // then needs to be called explicitly.
+   class TempDisable {
+   public:
+      TempDisable(GridAx * ax) : mAx(ax) { mAx->DisableSetCurrentCell(); }
+      ~TempDisable() {mAx->EnableSetCurrentCell();}
+   private:
+      GridAx *mAx;
+   };
+#endif
+
    switch (event.GetKeyCode())
    {
       case WXK_LEFT:
@@ -472,11 +494,6 @@ void Grid::OnKeyDown(wxKeyEvent &event)
                SetGridCursor(crow, ccol + 1);
             }
          }
-
-#if wxUSE_ACCESSIBILITY
-         // Make sure the NEW cell is made available to the screen reader
-         mAx->SetCurrentCell(GetGridCursorRow(), GetGridCursorCol());
-#endif
       }
       break;
 
@@ -496,6 +513,9 @@ void Grid::OnKeyDown(wxKeyEvent &event)
             return;
          }
          else if (event.ShiftDown()) {
+#if wxUSE_ACCESSIBILITY
+            TempDisable temp(mAx);
+#endif
             if (crow == 0 && ccol == 0) {
                Navigate(wxNavigationKeyEvent::FromTab | wxNavigationKeyEvent::IsBackward);
                return;
@@ -508,6 +528,9 @@ void Grid::OnKeyDown(wxKeyEvent &event)
             }
          }
          else {
+#if wxUSE_ACCESSIBILITY
+            TempDisable temp(mAx);
+#endif
             if (crow == rows - 1 && ccol == cols - 1) {
                Navigate(wxNavigationKeyEvent::FromTab | wxNavigationKeyEvent::IsForward);
                return;
@@ -522,7 +545,6 @@ void Grid::OnKeyDown(wxKeyEvent &event)
          MakeCellVisible(GetGridCursorRow(), GetGridCursorCol());
 
 #if wxUSE_ACCESSIBILITY
-         // Make sure the NEW cell is made available to the screen reader
          mAx->SetCurrentCell(GetGridCursorRow(), GetGridCursorCol());
 #endif
       }
@@ -541,12 +563,16 @@ void Grid::OnKeyDown(wxKeyEvent &event)
             }
          }
          else {
-            wxGrid::OnKeyDown(event);
+            {
+#if wxUSE_ACCESSIBILITY
+               TempDisable temp(mAx);
+#endif
+               wxGrid::OnKeyDown(event);
+            }
 
-            // This looks strange, but what it does is selects the cell when
-            // enter is pressed after editing.  Without it, Jaws and Window-Eyes
-            // do not speak the NEW cell contents (the one below the edited one).
-            SetGridCursor(GetGridCursorRow(), GetGridCursorCol());
+#if wxUSE_ACCESSIBILITY
+            mAx->SetCurrentCell(GetGridCursorRow(), GetGridCursorCol());
+#endif
          }
          break;
       }
@@ -626,6 +652,7 @@ GridAx::GridAx(Grid *grid)
 {
    mGrid = grid;
    mLastId = -1;
+   EnableSetCurrentCell();
 }
 
 void GridAx::TableUpdated()
@@ -638,26 +665,28 @@ void GridAx::TableUpdated()
 
 void GridAx::SetCurrentCell(int row, int col)
 {
-   int id = (((row * mGrid->GetNumberCols()) + col) + 1);
+   if (mSetCurrentCell) {
+      int id = (((row * mGrid->GetNumberCols()) + col) + 1);
 
-   if (mLastId != -1) {
-      NotifyEvent(wxACC_EVENT_OBJECT_SELECTIONREMOVE,
-               mGrid->GetGridWindow(),
-               wxOBJID_CLIENT,
-               mLastId);
+      if (mLastId != -1) {
+         NotifyEvent(wxACC_EVENT_OBJECT_SELECTIONREMOVE,
+                  mGrid->GetGridWindow(),
+                  wxOBJID_CLIENT,
+                  mLastId);
+      }
+
+      NotifyEvent(wxACC_EVENT_OBJECT_FOCUS,
+                  mGrid->GetGridWindow(),
+                  wxOBJID_CLIENT,
+                  id);
+
+      NotifyEvent(wxACC_EVENT_OBJECT_SELECTION,
+                  mGrid->GetGridWindow(),
+                  wxOBJID_CLIENT,
+                  id);
+
+      mLastId = id;
    }
-
-   NotifyEvent(wxACC_EVENT_OBJECT_FOCUS,
-               mGrid->GetGridWindow(),
-               wxOBJID_CLIENT,
-               id);
-
-   NotifyEvent(wxACC_EVENT_OBJECT_SELECTION,
-               mGrid->GetGridWindow(),
-               wxOBJID_CLIENT,
-               id);
-
-   mLastId = id;
 }
 
 bool GridAx::GetRowCol(int childId, int & row, int & col)
@@ -855,7 +884,9 @@ wxAccStatus GridAx::GetState(int childId, long *state)
            wxACC_STATE_SYSTEM_SELECTED;
 
       if (mGrid->IsReadOnly(row, col)) {
-         flag = wxACC_STATE_SYSTEM_UNAVAILABLE;
+         // It would be logical to include the state wxACC_STATE_SYSTEM_FOCUSABLE,
+         // but if this is included, Window-eyes no longer reads the cell as disabled.
+         flag = wxACC_STATE_SYSTEM_UNAVAILABLE | wxACC_STATE_SYSTEM_FOCUSED;
       }
 #endif
 
@@ -921,9 +952,9 @@ wxAccStatus GridAx::Select(int childId, wxAccSelectionFlags selectFlags)
 // If childId is 0 and child is NULL, no object in
 // this subhierarchy has the focus.
 // If this object has the focus, child should be 'this'.
-wxAccStatus GridAx::GetFocus(int * WXUNUSED(childId), wxAccessible **child)
+wxAccStatus GridAx::GetFocus(int * childId, wxAccessible **WXUNUSED(child))
 {
-   *child = this;
+   *childId = mGrid->GetGridCursorRow()*mGrid->GetNumberCols() + mGrid->GetGridCursorCol() + 1;
 
    return wxACC_OK;
 }
