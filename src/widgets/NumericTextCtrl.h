@@ -175,7 +175,7 @@ class NumericTextCtrl final : public wxControl, public NumericConverter
    // this control returns to the program, so you can specify.
    void SetInvalidValue(double invalidValue);
 
-   int GetFocusedField() { return mLastField; }
+   int GetFocusedField() { return mFocusedField; }    // numbering starts at 1, rather than 0
    int GetFocusedDigit() { return mFocusedDigit; }
 
 private:
@@ -220,7 +220,7 @@ private:
    int            mHeight;
    int            mButtonWidth;
 
-   int            mLastField;
+   int            mFocusedField;    // numbering starts at 1, rather than 0
 
    // If true, the focus will be set to the first non-zero digit
    bool           mAutoPos;

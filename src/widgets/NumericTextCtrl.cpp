@@ -1179,7 +1179,7 @@ NumericTextCtrl::NumericTextCtrl(NumericConverter::Type type,
    mBackgroundBitmap{},
    mDigitFont{},
    mLabelFont{},
-   mLastField(1),
+   mFocusedField(1),
    mAutoPos(autoPos)
    , mType(type)
 {
@@ -1771,7 +1771,7 @@ void NumericTextCtrl::SetFieldFocus(int  digit)
       return;
    }
    mFocusedDigit = digit;
-   mLastField = mDigits[mFocusedDigit].field + 1;
+   mFocusedField = mDigits[mFocusedDigit].field + 1;
 
    static_cast<NumericTextCtrlAx*>(GetAccessible())->SetFieldFocus();
 
@@ -1864,7 +1864,7 @@ void NumericTextCtrlAx::SetFieldFocus()
 
    wxString value = mCtrl->GetString();
    int field = mCtrl->GetFocusedField();
-   int digit = mCtrl->GetFocusedDigit() + 1;
+   int digit = mCtrl->GetFocusedDigit();
 
 
    if (mLastField != field) {
@@ -1912,13 +1912,13 @@ void NumericTextCtrlAx::SetFieldFocus()
               wxT(" ") +
               label +
               wxT(", ") +     // comma inserts a slight pause
-              mCtrl->GetString().at(mCtrl->mDigits[digit - 1].pos);
+              mCtrl->GetString().at(mCtrl->mDigits[digit].pos);
       mLastField = field;
    }
    // The user has moved from one digit to another within a field so
    // just report the digit under the cursor.
    else  {
-      mNameChild = mCtrl->GetString().at(mCtrl->mDigits[digit - 1].pos);
+      mNameChild = mCtrl->GetString().at(mCtrl->mDigits[digit].pos);
    }
 }
 
