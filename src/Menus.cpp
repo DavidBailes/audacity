@@ -591,6 +591,16 @@ void AudacityProject::CreateMenusAndCommands()
       c->AddItem(wxT("CursTrackStart"), _("to Track &Start"), FN(OnCursorTrackStart), wxT("J"));
       c->AddItem(wxT("CursTrackEnd"), _("to Track &End"), FN(OnCursorTrackEnd), wxT("K"));
 
+      c->AddItem(wxT("CursPrevClipStart"), _("to Previous Clip Start"), FN(OnCursorPrevClipStart), wxT("7"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      c->AddItem(wxT("CursNextClipStart"), _("to Next Clip Start"), FN(OnCursorNextClipStart), wxT("8"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      c->AddItem(wxT("CursPrevClipEnd"), _("to Previous Clip End"), FN(OnCursorPrevClipEnd), wxT("9"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      c->AddItem(wxT("CursNextClipEnd"), _("to Next Clip End"), FN(OnCursorNextClipEnd), wxT("0"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      
+
       c->EndSubMenu();
 
       /////////////////////////////////////////////////////////////////////////////
@@ -6006,6 +6016,63 @@ void AudacityProject::OnCursorSelEnd()
    mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t1());
    mTrackPanel->Refresh(false);
 }
+
+void AudacityProject::OnCursorNextClipStart()
+{
+   OnCursorClip(true, true);
+}
+
+void AudacityProject::OnCursorPrevClipStart()
+{
+   OnCursorClip(false, true);
+}
+
+void AudacityProject::OnCursorNextClipEnd()
+{
+   OnCursorClip(true, false);
+}
+
+void AudacityProject::OnCursorPrevClipEnd()
+{
+   OnCursorClip(false, false);
+}
+
+void AudacityProject::OnCursorClip(bool next, bool start)
+{
+   auto track = mTrackPanel->GetFocusedTrack();
+
+   if (track && track->GetKind() == Track::Wave) {
+      auto wt = static_cast<WaveTrack*>(track);
+      if (wt->GetNumClips()) {
+         double newCursorPosition;
+         int i;
+         if (next) {
+            if (start)
+               i = wt->FindNextClipStart(mViewInfo.selectedRegion.t0(), newCursorPosition );
+            else
+               i = wt->FindNextClipEnd(mViewInfo.selectedRegion.t0(), newCursorPosition );
+         }
+         else {
+            if (start)
+               i = wt->FindPrevClipStart(mViewInfo.selectedRegion.t0(), newCursorPosition );
+            else
+               i = wt->FindPrevClipEnd(mViewInfo.selectedRegion.t0(), newCursorPosition );
+         }
+         if (i >= 0) {
+            mViewInfo.selectedRegion.setTimes(newCursorPosition, newCursorPosition);
+            ModifyState(false);
+            mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t0());
+            mTrackPanel->Refresh(false);
+
+            wxString message;
+            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), start ? _("start") : _("end"));
+            mTrackPanel->MessageForScreenReader(message);
+         }
+      }
+   }
+}
+
+
 
 void AudacityProject::HandleAlign(int index, bool moveSel)
 {

@@ -361,6 +361,11 @@ void OnCursorTrackStart();
 void OnCursorTrackEnd();
 void OnCursorSelStart();
 void OnCursorSelEnd();
+void OnCursorNextClipStart();
+void OnCursorPrevClipStart();
+void OnCursorNextClipEnd();
+void OnCursorPrevClipEnd();
+void OnCursorClip(bool next, bool start);
 
 void OnAlignNoSync(int index);
 void OnAlign(int index);

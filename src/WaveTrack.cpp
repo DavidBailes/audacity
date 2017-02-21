@@ -2607,6 +2607,125 @@ WaveClipConstPointers WaveTrack::SortedClipArray() const
    return FillSortedClipArray<WaveClipConstPointers>(mClips);
 }
 
+int WaveTrack::FindNextClipStart(double time, double& clipStart)
+{
+   int i = -1;
+   clipStart = 0.0;
+   const auto clips = SortedClipArray();
+   int len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (time > clips[len-1]->GetStartTime()) {
+         i = -1;
+      }
+      else if (time == clips[len-1]->GetStartTime()) {
+         i = len - 1;
+         clipStart = time;
+      }
+      else {
+         i = 0;
+         while (i < len && (clips[i]->GetStartTime() <= time)) {
+            i++;
+         }
+         clipStart = clips[i]->GetStartTime();
+      }
+   }
+
+   int temp;
+   if (len >=2) {
+      double diff = clips[1]->GetStartTime() - clips[0]->GetEndTime();
+      if (diff > 0)
+         temp = 3;
+      else if (diff == 0.0)
+         temp = 2;
+      else
+         temp = 1;
+   }
+
+   return i;
+}
+
+int WaveTrack::FindPrevClipStart(double time, double& clipStart)
+{
+   int i = -1;
+   clipStart = 0.0;
+   const auto clips = SortedClipArray();
+   int len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (time < clips[0]->GetStartTime()) {
+         i = -1;
+      }
+      else if (time == clips[0]->GetStartTime()) {
+         i = 0;
+         clipStart = time;
+      }
+      else {
+         i = len - 1;
+         while (i >= 0 && (clips[i]->GetStartTime() >= time)) {
+            i--;
+         }
+         clipStart = clips[i]->GetStartTime();
+      }
+   }
+
+   return i;
+}
+
+int WaveTrack::FindNextClipEnd(double time, double& clipEnd)
+{
+   int i = -1;
+   clipEnd = 0.0;
+   const auto clips = SortedClipArray();
+   int len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (time > clips[len-1]->GetEndTime()) {
+         i = -1;
+      }
+      else if (time == clips[len-1]->GetEndTime()) {
+         i = len - 1;
+         clipEnd = time;
+      }
+      else {
+         i = 0;
+         while (i < len && (clips[i]->GetEndTime() <= time)) {
+            i++;
+         }
+         clipEnd = clips[i]->GetEndTime();
+      }
+   }
+
+   return i;
+}
+
+int WaveTrack::FindPrevClipEnd(double time, double& clipEnd)
+{
+   int i = -1;
+   clipEnd = 0.0;
+   const auto clips = SortedClipArray();
+   int len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (time < clips[0]->GetEndTime()) {
+         i = -1;
+      }
+      else if (time == clips[0]->GetEndTime()) {
+         i = 0;
+         clipEnd = time;
+      }
+      else {
+         i = len - 1;
+         while (i >= 0 && (clips[i]->GetEndTime() >= time)) {
+            i--;
+         }
+         clipEnd = clips[i]->GetEndTime();
+      }
+   }
+
+   return i;
+}
+
 ///Deletes all clips' wavecaches.  Careful, This may not be threadsafe.
 void WaveTrack::ClearWaveCaches()
 {

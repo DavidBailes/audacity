@@ -449,6 +449,11 @@ class AUDACITY_DLL_API WaveTrack final : public Track {
    WaveClipPointers SortedClipArray();
    WaveClipConstPointers SortedClipArray() const;
 
+   int FindNextClipStart(double time, double& clipStart);
+   int FindPrevClipStart(double time, double& clipStart);
+   int FindNextClipEnd(double time, double& clipEnd);
+   int FindPrevClipEnd(double time, double& clipEnd);
+
    // Before calling 'Offset' on a clip, use this function to see if the
    // offsetting is allowed with respect to the other clips in this track.
    // This function can optionally return the amount that is allowed for offsetting
