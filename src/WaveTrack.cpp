@@ -111,6 +111,9 @@ WaveTrack::WaveTrack(const std::shared_ptr<DirManager> &projDirManager, sampleFo
    mLastScaleType = -1;
    mLastdBRange = -1;
    mAutoSaveIdent = 0;
+
+   mLastFindClipI = -1;
+   mLastFindClipStart = false;
 }
 
 WaveTrack::WaveTrack(const WaveTrack &orig):
@@ -2612,22 +2615,31 @@ int WaveTrack::FindNextClipStart(double time, double& clipStart)
    int i = -1;
    clipStart = 0.0;
    const auto clips = SortedClipArray();
-   int len = (int)clips.size();
+   auto len = (int)clips.size();
 
    if (len > 0 ) {
-      if (time > clips[len-1]->GetStartTime()) {
-         i = -1;
-      }
-      else if (time == clips[len-1]->GetStartTime()) {
-         i = len - 1;
+      if (mLastFindClipI >= 0 && mLastFindClipI + 1 < len
+         && !mLastFindClipStart
+         && time == clips[mLastFindClipI]->GetEndTime()
+         && time == clips[mLastFindClipI + 1]->GetStartTime()) {
+         i = mLastFindClipI + 1;
          clipStart = time;
       }
       else {
-         i = 0;
-         while (i < len && (clips[i]->GetStartTime() <= time)) {
-            i++;
+         if (time > clips[len-1]->GetStartTime()) {
+            i = -1;
          }
-         clipStart = clips[i]->GetStartTime();
+         else if (time == clips[len-1]->GetStartTime()) {
+            i = len - 1;
+            clipStart = time;
+         }
+         else {
+            i = 0;
+            while (i < len && (clips[i]->GetStartTime() <= time)) {
+               i++;
+            }
+            clipStart = clips[i]->GetStartTime();
+         }
       }
    }
 
@@ -2642,6 +2654,8 @@ int WaveTrack::FindNextClipStart(double time, double& clipStart)
          temp = 1;
    }
 
+   mLastFindClipI = i;
+   mLastFindClipStart = true;
    return i;
 }
 
@@ -2650,7 +2664,7 @@ int WaveTrack::FindPrevClipStart(double time, double& clipStart)
    int i = -1;
    clipStart = 0.0;
    const auto clips = SortedClipArray();
-   int len = (int)clips.size();
+   auto len = (int)clips.size();
 
    if (len > 0 ) {
       if (time < clips[0]->GetStartTime()) {
@@ -2669,6 +2683,8 @@ int WaveTrack::FindPrevClipStart(double time, double& clipStart)
       }
    }
 
+   mLastFindClipI = i;
+   mLastFindClipStart = true;
    return i;
 }
 
@@ -2677,7 +2693,7 @@ int WaveTrack::FindNextClipEnd(double time, double& clipEnd)
    int i = -1;
    clipEnd = 0.0;
    const auto clips = SortedClipArray();
-   int len = (int)clips.size();
+   auto len = (int)clips.size();
 
    if (len > 0 ) {
       if (time > clips[len-1]->GetEndTime()) {
@@ -2696,6 +2712,8 @@ int WaveTrack::FindNextClipEnd(double time, double& clipEnd)
       }
    }
 
+   mLastFindClipI = i;
+   mLastFindClipStart = false;
    return i;
 }
 
@@ -2704,25 +2722,36 @@ int WaveTrack::FindPrevClipEnd(double time, double& clipEnd)
    int i = -1;
    clipEnd = 0.0;
    const auto clips = SortedClipArray();
-   int len = (int)clips.size();
+   auto len = (int)clips.size();
 
    if (len > 0 ) {
-      if (time < clips[0]->GetEndTime()) {
-         i = -1;
-      }
-      else if (time == clips[0]->GetEndTime()) {
-         i = 0;
+      if (mLastFindClipI > 0 && mLastFindClipI < len
+         && mLastFindClipStart
+         && time == clips[mLastFindClipI]->GetStartTime()
+         && time == clips[mLastFindClipI - 1]->GetEndTime()) {
+         i = mLastFindClipI - 1;
          clipEnd = time;
       }
       else {
-         i = len - 1;
-         while (i >= 0 && (clips[i]->GetEndTime() >= time)) {
-            i--;
+         if (time < clips[0]->GetEndTime()) {
+            i = -1;
          }
-         clipEnd = clips[i]->GetEndTime();
+         else if (time == clips[0]->GetEndTime()) {
+            i = 0;
+            clipEnd = time;
+         }
+         else {
+            i = len - 1;
+            while (i >= 0 && (clips[i]->GetEndTime() >= time)) {
+               i--;
+            }
+            clipEnd = clips[i]->GetEndTime();
+         }
       }
    }
 
+   mLastFindClipI = i;
+   mLastFindClipStart = false;
    return i;
 }
 

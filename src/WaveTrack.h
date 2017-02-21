@@ -604,6 +604,9 @@ class AUDACITY_DLL_API WaveTrack final : public Track {
 
    std::unique_ptr<SpectrogramSettings> mpSpectrumSettings;
    std::unique_ptr<WaveformSettings> mpWaveformSettings;
+
+   int mLastFindClipI;        // used by FindNextClipStart, etc
+   bool mLastFindClipStart;   // used by FindNextClipStart, etc
 };
 
 // This is meant to be a short-lived object, during whose lifetime,
