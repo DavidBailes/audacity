@@ -2626,14 +2626,11 @@ int WaveTrack::FindNextClipStart(double time, double& clipStart)
          clipStart = time;
       }
       else {
-         if (time > clips[len-1]->GetStartTime()) {
-            i = -1;
-         }
-         else if (time == clips[len-1]->GetStartTime()) {
+         if (time == clips[len-1]->GetStartTime()) {
             i = len - 1;
             clipStart = time;
          }
-         else {
+         else if (time < clips[len-1]->GetStartTime()){
             i = 0;
             while (i < len && (clips[i]->GetStartTime() <= time)) {
                i++;
@@ -2667,14 +2664,11 @@ int WaveTrack::FindPrevClipStart(double time, double& clipStart)
    auto len = (int)clips.size();
 
    if (len > 0 ) {
-      if (time < clips[0]->GetStartTime()) {
-         i = -1;
-      }
-      else if (time == clips[0]->GetStartTime()) {
+      if (time == clips[0]->GetStartTime()) {
          i = 0;
          clipStart = time;
       }
-      else {
+      else if (time > clips[0]->GetStartTime()) {
          i = len - 1;
          while (i >= 0 && (clips[i]->GetStartTime() >= time)) {
             i--;
@@ -2696,14 +2690,11 @@ int WaveTrack::FindNextClipEnd(double time, double& clipEnd)
    auto len = (int)clips.size();
 
    if (len > 0 ) {
-      if (time > clips[len-1]->GetEndTime()) {
-         i = -1;
-      }
-      else if (time == clips[len-1]->GetEndTime()) {
+      if (time == clips[len-1]->GetEndTime()) {
          i = len - 1;
          clipEnd = time;
       }
-      else {
+      else if (time < clips[len-1]->GetEndTime()){
          i = 0;
          while (i < len && (clips[i]->GetEndTime() <= time)) {
             i++;
@@ -2733,14 +2724,11 @@ int WaveTrack::FindPrevClipEnd(double time, double& clipEnd)
          clipEnd = time;
       }
       else {
-         if (time < clips[0]->GetEndTime()) {
-            i = -1;
-         }
-         else if (time == clips[0]->GetEndTime()) {
+         if (time == clips[0]->GetEndTime()) {
             i = 0;
             clipEnd = time;
          }
-         else {
+         else if (time > clips[0]->GetEndTime()) {
             i = len - 1;
             while (i >= 0 && (clips[i]->GetEndTime() >= time)) {
                i--;
