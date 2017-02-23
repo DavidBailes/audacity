@@ -449,6 +449,9 @@ class AUDACITY_DLL_API WaveTrack final : public Track {
    WaveClipPointers SortedClipArray();
    WaveClipConstPointers SortedClipArray() const;
 
+   int FindNextClipBoundary(double time, double& clipBoundary, bool& clipStart);
+   int FindPrevClipBoundary(double time, double& clipBoundary, bool& clipStart);
+
    // Before calling 'Offset' on a clip, use this function to see if the
    // offsetting is allowed with respect to the other clips in this track.
    // This function can optionally return the amount that is allowed for offsetting
@@ -599,6 +602,10 @@ class AUDACITY_DLL_API WaveTrack final : public Track {
 
    std::unique_ptr<SpectrogramSettings> mpSpectrumSettings;
    std::unique_ptr<WaveformSettings> mpWaveformSettings;
+
+   // used by FindNextClipBoundary and FindPrevClipBoundary
+   int mLastFindClipI;           // index of last found clip boundary
+   bool mLastFindClipStart;      // last found boundary was a clip start
 };
 
 // This is meant to be a short-lived object, during whose lifetime,

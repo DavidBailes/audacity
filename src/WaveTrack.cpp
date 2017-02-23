@@ -111,6 +111,9 @@ WaveTrack::WaveTrack(const std::shared_ptr<DirManager> &projDirManager, sampleFo
    mLastScaleType = -1;
    mLastdBRange = -1;
    mAutoSaveIdent = 0;
+
+   mLastFindClipI = -1;
+   mLastFindClipStart = false;
 }
 
 WaveTrack::WaveTrack(const WaveTrack &orig):
@@ -2605,6 +2608,92 @@ WaveClipPointers WaveTrack::SortedClipArray()
 WaveClipConstPointers WaveTrack::SortedClipArray() const
 {
    return FillSortedClipArray<WaveClipConstPointers>(mClips);
+}
+
+int WaveTrack::FindNextClipBoundary(double time, double& clipBoundary, bool& clipStart)
+{
+   int i = -1;
+   clipBoundary = 0.0;
+   clipStart = true;
+   const auto clips = SortedClipArray();
+   auto len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (mLastFindClipI >= 0 && mLastFindClipI + 1 < len
+         && !mLastFindClipStart
+         && time == clips[mLastFindClipI]->GetEndTime()
+         && time == clips[mLastFindClipI + 1]->GetStartTime()) {
+         i = mLastFindClipI + 1;
+         clipBoundary = time;
+         clipStart = true;
+      }
+      else {
+         if (time == clips[len-1]->GetEndTime()) {
+            i = len - 1;
+            clipBoundary = time;
+            clipStart = false;
+         }
+         else if (time < clips[len-1]->GetEndTime()) {
+            i = 0;
+            bool start = true;
+            while (i < len
+               && (start ? clips[i]->GetStartTime() : clips[i]->GetEndTime()) <= time ) {
+               if (!start)
+                  i++;
+               start = !start;
+            }
+            clipStart = start;
+            clipBoundary = (start ? clips[i]->GetStartTime() : clips[i]->GetEndTime());
+         }
+      }
+   }
+
+   mLastFindClipI = i;
+   mLastFindClipStart = clipStart;
+   return i;
+}
+
+int WaveTrack::FindPrevClipBoundary(double time, double& clipBoundary, bool& clipStart)
+{
+   int i = -1;
+   clipBoundary = 0.0;
+   clipStart = true;
+   const auto clips = SortedClipArray();
+   auto len = (int)clips.size();
+
+   if (len > 0 ) {
+      if (mLastFindClipI > 0 && mLastFindClipI < len
+         && mLastFindClipStart
+         && time == clips[mLastFindClipI]->GetStartTime()
+         && time == clips[mLastFindClipI - 1]->GetEndTime()) {
+         i = mLastFindClipI - 1;
+         clipBoundary = time;
+         clipStart = false;
+      }
+      else {
+         if (time == clips[0]->GetStartTime()) {
+            i = 0;
+            clipBoundary = time;
+            clipStart = true;
+         }
+         else if (time > clips[0]->GetStartTime()) {
+            i = len - 1;
+            bool start = false;
+            while (i >= 0
+               && (start ? clips[i]->GetStartTime() : clips[i]->GetEndTime()) >= time ) {
+               if (start)
+                  i--;
+               start = !start;
+            }
+            clipStart = start;
+            clipBoundary = (start ? clips[i]->GetStartTime() : clips[i]->GetEndTime());
+         }
+      }
+   }
+
+   mLastFindClipI = i;
+   mLastFindClipStart = clipStart;
+   return i;
 }
 
 ///Deletes all clips' wavecaches.  Careful, This may not be threadsafe.

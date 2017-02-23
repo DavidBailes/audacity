@@ -558,6 +558,12 @@ void AudacityProject::CreateMenusAndCommands()
 
       c->AddItem(wxT("SelStartCursor"), _("Track &Start to Cursor"), FN(OnSelectStartCursor), wxT("Shift+J"));
       c->AddItem(wxT("SelCursorEnd"), _("Cursor to Track &End"), FN(OnSelectCursorEnd), wxT("Shift+K"));
+      c->AddItem(wxT("SelPrevClipBoundaryToCursor"), _("Previous Clip Boundary to Cursor"),
+         FN(OnSelectPrevClipBoundaryToCursor), wxT("Shift+7"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus );
+      c->AddItem(wxT("SelCursorToNextClipBoundary"), _("Cursor to Next Clip Boundary"),
+         FN(OnSelectCursorToNextClipBoundary), wxT("Shift+8"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus );
       c->AddItem(wxT("SelCursorStoredCursor"), _("Cursor to Stored &Cursor Position"), FN(OnSelectCursorStoredCursor),
          wxT(""), TracksExistFlag, TracksExistFlag);
 
@@ -590,6 +596,11 @@ void AudacityProject::CreateMenusAndCommands()
 
       c->AddItem(wxT("CursTrackStart"), _("to Track &Start"), FN(OnCursorTrackStart), wxT("J"));
       c->AddItem(wxT("CursTrackEnd"), _("to Track &End"), FN(OnCursorTrackEnd), wxT("K"));
+
+      c->AddItem(wxT("CursPrevClipBoundary"), _("to Previous Clip Boundary"), FN(OnCursorPrevClipBoundary), wxT("7"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      c->AddItem(wxT("CursNextClipBoundary"), _("to Next Clip Boundary"), FN(OnCursorNextClipBoundary), wxT("8"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
 
       c->EndSubMenu();
 
@@ -5197,6 +5208,54 @@ void AudacityProject::OnSelectStartCursor()
    mTrackPanel->Refresh(false);
 }
 
+void AudacityProject::OnSelectPrevClipBoundaryToCursor()
+{
+   auto track = mTrackPanel->GetFocusedTrack();
+
+   if (track && track->GetKind() == Track::Wave) {
+      auto wt = static_cast<WaveTrack*>(track);
+      if (wt->GetNumClips()) {
+         double newSelectionStart;
+         bool clipStart;
+         int i = wt->FindPrevClipBoundary(mViewInfo.selectedRegion.t0(), newSelectionStart, clipStart);
+
+         if (i >= 0) {
+            mViewInfo.selectedRegion.setT0(newSelectionStart);
+            ModifyState(false);
+            mTrackPanel->Refresh(false);
+
+            wxString message;
+            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
+            mTrackPanel->MessageForScreenReader(message);
+         }
+      }
+   }
+}
+
+void AudacityProject::OnSelectCursorToNextClipBoundary()
+{
+   auto track = mTrackPanel->GetFocusedTrack();
+
+   if (track && track->GetKind() == Track::Wave) {
+      auto wt = static_cast<WaveTrack*>(track);
+      if (wt->GetNumClips()) {
+         double newSelectionEnd;
+         bool clipStart;
+         int i = wt->FindNextClipBoundary(mViewInfo.selectedRegion.t1(), newSelectionEnd, clipStart);
+
+         if (i >= 0) {
+            mViewInfo.selectedRegion.setT1(newSelectionEnd);
+            ModifyState(false);
+            mTrackPanel->Refresh(false);
+
+            wxString message;
+            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
+            mTrackPanel->MessageForScreenReader(message);
+         }
+      }
+   }
+}
+
 void AudacityProject::OnSelectCursorStoredCursor()
 {
    if (mCursorPositionHasBeenStored) {
@@ -6005,6 +6064,45 @@ void AudacityProject::OnCursorSelEnd()
    ModifyState(false);
    mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t1());
    mTrackPanel->Refresh(false);
+}
+
+void AudacityProject::OnCursorNextClipBoundary()
+{
+   OnCursorClipBoundary(true);
+}
+
+void AudacityProject::OnCursorPrevClipBoundary()
+{
+   OnCursorClipBoundary(false);
+}
+
+void AudacityProject::OnCursorClipBoundary(bool next)
+{
+   auto track = mTrackPanel->GetFocusedTrack();
+
+   if (track && track->GetKind() == Track::Wave) {
+      auto wt = static_cast<WaveTrack*>(track);
+      if (wt->GetNumClips()) {
+         double newCursorPosition;
+         int i;
+         bool clipStart;
+         if (next)
+            i = wt->FindNextClipBoundary(mViewInfo.selectedRegion.t0(), newCursorPosition, clipStart);
+         else
+            i = wt->FindPrevClipBoundary(mViewInfo.selectedRegion.t0(), newCursorPosition, clipStart);
+
+         if (i >= 0) {
+            mViewInfo.selectedRegion.setTimes(newCursorPosition, newCursorPosition);
+            ModifyState(false);
+            mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t0());
+            mTrackPanel->Refresh(false);
+
+            wxString message;
+            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
+            mTrackPanel->MessageForScreenReader(message);
+         }
+      }
+   }
 }
 
 void AudacityProject::HandleAlign(int index, bool moveSel)

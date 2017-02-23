@@ -273,6 +273,8 @@ void OnNextLowerPeakFrequency();
 #endif
 void OnSelectCursorEnd();
 void OnSelectStartCursor();
+void OnSelectPrevClipBoundaryToCursor();
+void OnSelectCursorToNextClipBoundary();
 void OnSelectCursorStoredCursor();
 void OnSelectSyncLockSel();
 void OnSelectAllTracks();
@@ -361,6 +363,9 @@ void OnCursorTrackStart();
 void OnCursorTrackEnd();
 void OnCursorSelStart();
 void OnCursorSelEnd();
+void OnCursorNextClipBoundary();
+void OnCursorPrevClipBoundary();
+void OnCursorClipBoundary(bool next);
 
 void OnAlignNoSync(int index);
 void OnAlign(int index);
