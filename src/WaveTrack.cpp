@@ -2155,6 +2155,20 @@ WaveClip* WaveTrack::GetClipAtSample(sampleCount sample)
    return NULL;
 }
 
+WaveClip* WaveTrack::GetClipAtTime(double time)
+{
+   // Note, there could be two clips - second is found
+
+   WaveClip* foundClip = nullptr;
+   const auto clips = SortedClipArray();
+   for (const auto clip : clips) {
+      if (time >= clip->GetStartTime() && time <= clip->GetEndTime())
+         foundClip = clip;
+   }
+
+   return foundClip;
+}
+
 Envelope* WaveTrack::GetEnvelopeAtX(int xcoord)
 {
    WaveClip* clip = GetClipAtX(xcoord);
