@@ -5329,19 +5329,19 @@ void AudacityProject::OnSelectClip(bool next)
         int i = 0;
 
         if (next) {
-            auto result_next = find_if(clips.begin(), clips.end(), [&] (WaveClip* const& clip) {
+            auto result = find_if(clips.begin(), clips.end(), [&] (WaveClip* const& clip) {
                 return clip->GetStartTime() > t0; });
-            if (result_next != clips.end()) {
-                clip = *result_next;
-                i = result_next - clips.begin();
+            if (result != clips.end()) {
+                clip = *result;
+                i = result - clips.begin();
             }
         }
         else {
-            auto result_prev = find_if(clips.rbegin(), clips.rend(), [&] (WaveClip* const& clip) {
+            auto result = find_if(clips.rbegin(), clips.rend(), [&] (WaveClip* const& clip) {
                 return clip->GetStartTime() < t0; });
-            if (result_prev != clips.rend()) {
-                clip = *result_prev;
-                i = (int)clips.size() - 1 - (result_prev - clips.rbegin());
+            if (result != clips.rend()) {
+                clip = *result;
+                i = (int)clips.size() - 1 - (result - clips.rbegin());
             }
         }
 
