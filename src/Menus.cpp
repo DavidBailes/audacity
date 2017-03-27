@@ -35,6 +35,7 @@ simplifies construction of menu items.
 
 #include <cfloat>
 #include <iterator>
+#include <algorithm>
 #include <limits>
 #include <math.h>
 
@@ -588,6 +589,10 @@ void AudacityProject::CreateMenusAndCommands()
 
       c->AddItem(wxT("SelStartCursor"), _("Track &Start to Cursor"), FN(OnSelectStartCursor), wxT("Shift+J"));
       c->AddItem(wxT("SelCursorEnd"), _("Cursor to Track &End"), FN(OnSelectCursorEnd), wxT("Shift+K"));
+      c->AddItem(wxT("SelPrevClip"), _("Previous Clip"), FN(OnSelectPrevClip), wxT("5"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
+      c->AddItem(wxT("SelNextClip"), _("Next Clip"), FN(OnSelectNextClip), wxT("6"),
+         WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
       c->AddItem(wxT("SelCursorStoredCursor"), _("Cursor to Saved &Cursor Position"), FN(OnSelectCursorStoredCursor),
          wxT(""), TracksExistFlag, TracksExistFlag);
 
@@ -5300,6 +5305,57 @@ void AudacityProject::OnSelectStartCursor()
    ModifyState(false);
 
    mTrackPanel->Refresh(false);
+}
+
+void AudacityProject::OnSelectPrevClip()
+{
+    OnSelectClip(false);
+}
+
+void AudacityProject::OnSelectNextClip()
+{
+    OnSelectClip(true);
+}
+
+void AudacityProject::OnSelectClip(bool next)
+{
+    auto track = mTrackPanel->GetFocusedTrack();
+
+    if (track && track->GetKind() == Track::Wave) {
+        auto wt = static_cast<WaveTrack*>(track);
+        const auto clips = wt->SortedClipArray();
+        double t0 = mViewInfo.selectedRegion.t0();
+        WaveClip* clip = nullptr;
+        int i = 0;
+
+        if (next) {
+            auto result_next = find_if(clips.begin(), clips.end(), [&] (WaveClip* const& clip) {
+                return clip->GetStartTime() > t0; });
+            if (result_next != clips.end()) {
+                clip = *result_next;
+                i = result_next - clips.begin();
+            }
+        }
+        else {
+            auto result_prev = find_if(clips.rbegin(), clips.rend(), [&] (WaveClip* const& clip) {
+                return clip->GetStartTime() < t0; });
+            if (result_prev != clips.rend()) {
+                clip = *result_prev;
+                i = (int)clips.size() - 1 - (result_prev - clips.rbegin());
+            }
+        }
+
+        if (clip) {
+            mViewInfo.selectedRegion.setTimes(clip->GetStartTime(), clip->GetEndTime());
+            mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t0());
+            ModifyState(false);
+            mTrackPanel->Refresh(false);
+            wxString message;
+            message.Printf(wxT("%d of %d %s"), i + 1, clips.size(), _("Selected"));
+            mTrackPanel->MessageForScreenReader(message);
+        }
+    }
+
 }
 
 void AudacityProject::OnSelectCursorStoredCursor()
