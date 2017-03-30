@@ -282,6 +282,8 @@ void OnNextLowerPeakFrequency();
 #endif
 void OnSelectCursorEnd();
 void OnSelectStartCursor();
+void OnSelectPrevClipBoundaryToCursor();
+void OnSelectCursorToNextClipBoundary();
 void OnSelectCursorStoredCursor();
 void OnSelectSyncLockSel();
 void OnSelectAllTracks();
@@ -375,6 +377,18 @@ void OnCursorTrackStart();
 void OnCursorTrackEnd();
 void OnCursorSelStart();
 void OnCursorSelEnd();
+typedef struct FoundClipBoundary {
+   int nFound;
+   double time;
+   int index1;
+   bool clipStart1;
+   int index2;
+   bool clipStart2;
+} FoundClipBoundary;
+FoundClipBoundary FindNextClipBoundary(WaveTrack* wt, double time);
+void OnCursorNextClipBoundary();
+void OnCursorPrevClipBoundary();
+void OnCursorClipBoundary(bool next);
 
 void OnAlignNoSync(int index);
 void OnAlign(int index);
