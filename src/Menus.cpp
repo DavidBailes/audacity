@@ -838,8 +838,6 @@ void AudacityProject::CreateMenusAndCommands()
       c->AddItem(wxT("CursNextClipBoundary"), _("to Next Clip Boundary"), FN(OnCursorNextClipBoundary), wxT("8"),
          WaveTracksExistFlag | TrackPanelHasFocus, WaveTracksExistFlag | TrackPanelHasFocus);
 
-      c->EndSubMenu();
-
       c->AddItem(wxT("CursProjectStart"), _("&Project Start"), FN(OnSkipStart), wxT("Home"));
       c->AddItem(wxT("CursProjectEnd"), _("Project E&nd"), FN(OnSkipEnd), wxT("End"));
 
@@ -5320,50 +5318,51 @@ void AudacityProject::OnSelectStartCursor()
 
 void AudacityProject::OnSelectPrevClipBoundaryToCursor()
 {
-   auto track = mTrackPanel->GetFocusedTrack();
-
-   if (track && track->GetKind() == Track::Wave) {
-      auto wt = static_cast<WaveTrack*>(track);
-      if (wt->GetNumClips()) {
-         double newSelectionStart;
-         bool clipStart;
-         int i = 0; //wt->FindPrevClipBoundary(mViewInfo.selectedRegion.t0(), newSelectionStart, clipStart);
-
-         if (i >= 0) {
-            mViewInfo.selectedRegion.setT0(newSelectionStart);
-            ModifyState(false);
-            mTrackPanel->Refresh(false);
-
-            wxString message;
-            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
-            mTrackPanel->MessageForScreenReader(message);
-         }
-      }
-   }
+   OnSelectClipBoundary(false);
 }
 
 void AudacityProject::OnSelectCursorToNextClipBoundary()
 {
-   auto track = mTrackPanel->GetFocusedTrack();
+   OnSelectClipBoundary(true);
+}
+
+void AudacityProject::OnSelectClipBoundary(bool next)
+{
+   const auto track = mTrackPanel->GetFocusedTrack();
 
    if (track && track->GetKind() == Track::Wave) {
-      auto wt = static_cast<WaveTrack*>(track);
+      const auto wt = static_cast<WaveTrack*>(track);
       if (wt->GetNumClips()) {
-         double newSelectionEnd;
-         bool clipStart;
-         int i = 0; //wt->FindNextClipBoundary(mViewInfo.selectedRegion.t1(), newSelectionEnd, clipStart);
+         AudacityProject::FoundClipBoundary result{};
 
-         if (i >= 0) {
-            mViewInfo.selectedRegion.setT1(newSelectionEnd);
+         if (next)
+            result = FindNextClipBoundary(wt, mViewInfo.selectedRegion.t1());
+         else
+            result = FindPrevClipBoundary(wt, mViewInfo.selectedRegion.t0());
+
+         if (result.nFound > 0) {
+            if (next)
+               mViewInfo.selectedRegion.setT1(result.time);
+            else
+               mViewInfo.selectedRegion.setT0(result.time);
+
             ModifyState(false);
             mTrackPanel->Refresh(false);
 
             wxString message;
-            message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
+            message.Printf(wxT("%d %s %d %s"), result.index1 + 1, _("of"), wt->GetNumClips(),
+               result.clipStart1 ? _("start") : _("end"));
+            if (result.nFound == 2) {
+               wxString messageAdd;
+               messageAdd.Printf(wxT(" %s %d %s"), _("and"), result.index2 + 1,
+                  result.clipStart2 ? _("start") : _("end"));
+               message += messageAdd;
+            }
             mTrackPanel->MessageForScreenReader(message);
          }
       }
    }
+
 }
 
 void AudacityProject::OnSelectCursorStoredCursor()
@@ -6193,14 +6192,14 @@ void AudacityProject::OnCursorSelEnd()
    mTrackPanel->Refresh(false);
 }
 
-AudacityProject::FoundClipBoundary AudacityProject::FindNextClipBoundary(WaveTrack* wt, double time)
+AudacityProject::FoundClipBoundary AudacityProject::FindNextClipBoundary(const WaveTrack* wt, double time)
 {
    AudacityProject::FoundClipBoundary result{};
 
    const auto clips = wt->SortedClipArray();
-   auto resultStart = find_if(clips.begin(), clips.end(), [&] (WaveClip* const& clip) {
+   auto resultStart = find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
       return clip->GetStartTime() > time; });
-   auto resultEnd = find_if(clips.begin(), clips.end(), [&] (WaveClip* const& clip) {
+   auto resultEnd = find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
       return clip->GetEndTime() > time; });
 
    if (resultStart != clips.end() && resultEnd != clips.end()) {
@@ -6235,6 +6234,48 @@ AudacityProject::FoundClipBoundary AudacityProject::FindNextClipBoundary(WaveTra
    return result;
 }
 
+AudacityProject::FoundClipBoundary AudacityProject::FindPrevClipBoundary(const WaveTrack* wt, double time)
+{
+   AudacityProject::FoundClipBoundary result{};
+
+   const auto clips = wt->SortedClipArray();
+   auto resultStart = find_if(clips.rbegin(), clips.rend(), [&] (const WaveClip* const& clip) {
+      return clip->GetStartTime() < time; });
+   auto resultEnd = find_if(clips.rbegin(), clips.rend(), [&] (const WaveClip* const& clip) {
+      return clip->GetEndTime() < time; });
+
+   if (resultStart != clips.rend() && resultEnd != clips.rend()) {
+      if ((*resultStart)->GetStartTime() > (*resultEnd)->GetEndTime()) {
+         result.nFound = 1;
+         result.time = (*resultStart)->GetStartTime();
+         result.index1 = static_cast<int>(clips.size()) - 1 - (resultStart - clips.rbegin());
+         result.clipStart1 = true;
+      }
+      else if ((*resultStart)->GetStartTime() < (*resultEnd)->GetEndTime()) {
+         result.nFound = 1;
+         result.time = (*resultEnd)->GetEndTime();
+         result.index1 = static_cast<int>(clips.size()) - 1 - (resultEnd - clips.rbegin());
+         result.clipStart1 = false;
+      }
+      else {
+         result.nFound = 2;
+         result.time = (*resultStart)->GetStartTime();
+         result.index1 = static_cast<int>(clips.size()) - 1 - (resultStart - clips.rbegin());
+         result.clipStart1 = true;
+         result.index2 = static_cast<int>(clips.size()) - 1 - (resultEnd - clips.rbegin());
+         result.clipStart2 = false;
+      }
+   }
+   else if (resultStart != clips.rend()) {
+      result.nFound = 1;
+      result.time = (*resultStart)->GetStartTime();
+      result.index1 = static_cast<int>(clips.size()) - 1 - (resultStart - clips.rbegin());
+      result.clipStart1 = true;
+   }
+
+   return result;
+}
+
 void AudacityProject::OnCursorNextClipBoundary()
 {
    OnCursorClipBoundary(true);
@@ -6247,16 +6288,16 @@ void AudacityProject::OnCursorPrevClipBoundary()
 
 void AudacityProject::OnCursorClipBoundary(bool next)
 {
-   auto track = mTrackPanel->GetFocusedTrack();
+   const auto track = mTrackPanel->GetFocusedTrack();
 
    if (track && track->GetKind() == Track::Wave) {
-      auto wt = static_cast<WaveTrack*>(track);
+      const auto wt = static_cast<WaveTrack*>(track);
       if (wt->GetNumClips()) {
          AudacityProject::FoundClipBoundary result{};
          if (next)
             result = FindNextClipBoundary(wt, mViewInfo.selectedRegion.t0());
          else
-            ;
+            result = FindPrevClipBoundary(wt, mViewInfo.selectedRegion.t0());
 
          if (result.nFound > 0) {
             mViewInfo.selectedRegion.setTimes(result.time, result.time);
@@ -6265,7 +6306,14 @@ void AudacityProject::OnCursorClipBoundary(bool next)
             mTrackPanel->Refresh(false);
 
             wxString message;
-            //message.Printf(wxT("%d of %d %s"), i + 1, wt->GetNumClips(), clipStart ? _("start") : _("end"));
+            message.Printf(wxT("%d %s %d %s"), result.index1 + 1, _("of"), wt->GetNumClips(),
+               result.clipStart1 ? _("start") : _("end"));
+            if (result.nFound == 2) {
+               wxString messageAdd;
+               messageAdd.Printf(wxT(" %s %d %s"), _("and"), result.index2 + 1,
+                  result.clipStart2 ? _("start") : _("end"));
+               message += messageAdd;
+            }
             mTrackPanel->MessageForScreenReader(message);
          }
       }

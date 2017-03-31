@@ -284,6 +284,7 @@ void OnSelectCursorEnd();
 void OnSelectStartCursor();
 void OnSelectPrevClipBoundaryToCursor();
 void OnSelectCursorToNextClipBoundary();
+void OnSelectClipBoundary(bool next);
 void OnSelectCursorStoredCursor();
 void OnSelectSyncLockSel();
 void OnSelectAllTracks();
@@ -385,7 +386,8 @@ typedef struct FoundClipBoundary {
    int index2;
    bool clipStart2;
 } FoundClipBoundary;
-FoundClipBoundary FindNextClipBoundary(WaveTrack* wt, double time);
+FoundClipBoundary FindNextClipBoundary(const WaveTrack* wt, double time);
+FoundClipBoundary FindPrevClipBoundary(const WaveTrack* wt, double time);
 void OnCursorNextClipBoundary();
 void OnCursorPrevClipBoundary();
 void OnCursorClipBoundary(bool next);
