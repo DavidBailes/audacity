@@ -5391,37 +5391,47 @@ void AudacityProject::OnSelectCursorToNextClipBoundary()
 
 void AudacityProject::OnSelectClipBoundary(bool next)
 {
-   const auto track = mTrackPanel->GetFocusedTrack();
+   std::vector<FoundClipBoundary> results;
+   int nTracksSearched = FindClipBoundaries(next ? mViewInfo.selectedRegion.t1() :
+      mViewInfo.selectedRegion.t0(), next, results);
 
-   if (track && track->GetKind() == Track::Wave) {
-      const auto wt = static_cast<WaveTrack*>(track);
-      if (wt->GetNumClips()) {
-         auto result = next ? FindNextClipBoundary(wt, mViewInfo.selectedRegion.t1()) :
-            FindPrevClipBoundary(wt, mViewInfo.selectedRegion.t0());
+   if (results.size() > 0) {
+      if (next)
+         mViewInfo.selectedRegion.setT1(results[0].time);
+      else
+         mViewInfo.selectedRegion.setT0(results[0].time);
 
-         if (result.nFound > 0) {
-            if (next)
-               mViewInfo.selectedRegion.setT1(result.time);
-            else
-               mViewInfo.selectedRegion.setT0(result.time);
+      ModifyState(false);
+      mTrackPanel->Refresh(false);
 
-            ModifyState(false);
-            mTrackPanel->Refresh(false);
-
-            wxString message;
-            message.Printf(wxT("%d %s %d %s"), result.index1 + 1, _("of"), wt->GetNumClips(),
-               result.clipStart1 ? _("start") : _("end"));
-            if (result.nFound == 2) {
-               wxString messageAdd;
-               messageAdd.Printf(wxT(" %s %d %s"), _("and"), result.index2 + 1,
-                  result.clipStart2 ? _("start") : _("end"));
-               message += messageAdd;
+      wxString message;
+      for (auto& result : results) {
+         wxString temp;
+         if (nTracksSearched > 1) {
+            if (result.waveTrack->GetName() == result.waveTrack->GetDefaultName()) {
+               auto track = std::find_if(GetTracks()->begin(), GetTracks()->end(),
+                  [&] (const movable_ptr<Track>& t) { return t.get() == result.waveTrack; });
+               temp.Printf(wxT("%s %d "), _("Track"), std::distance(GetTracks()->begin(), track) + 1);
             }
-            mTrackPanel->MessageForScreenReader(message);
-         }
-      }
-   }
+            else 
+               temp.Printf( wxT("%s "), result.waveTrack->GetName());
 
+            message += temp;
+         }
+
+         temp.Printf(wxT("%s %d %s %d "), result.clipStart1 ? _("start") : _("end"),
+            result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
+         message += temp;
+         if (result.nFound == 2) {
+            temp.Printf(wxT("%s %s %d "), _("and"), result.clipStart2 ? _("start") : _("end"),
+               result.index2 + 1);
+            message += temp;
+         }
+         temp.Printf(wxT(", "));
+         message += temp;
+      }
+      mTrackPanel->MessageForScreenReader(message);
+   }
 }
 
 void AudacityProject::OnSelectPrevClip()
@@ -6343,6 +6353,7 @@ void AudacityProject::OnCursorSelEnd()
 AudacityProject::FoundClipBoundary AudacityProject::FindNextClipBoundary(const WaveTrack* wt, double time)
 {
    AudacityProject::FoundClipBoundary result{};
+   result.waveTrack = wt;
 
    const auto clips = wt->SortedClipArray();
    auto resultStart = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
@@ -6385,6 +6396,7 @@ AudacityProject::FoundClipBoundary AudacityProject::FindNextClipBoundary(const W
 AudacityProject::FoundClipBoundary AudacityProject::FindPrevClipBoundary(const WaveTrack* wt, double time)
 {
    AudacityProject::FoundClipBoundary result{};
+   result.waveTrack = wt;
 
    const auto clips = wt->SortedClipArray();
    auto resultStart = std::find_if(clips.rbegin(), clips.rend(), [&] (const WaveClip* const& clip) {
@@ -6424,6 +6436,41 @@ AudacityProject::FoundClipBoundary AudacityProject::FindPrevClipBoundary(const W
    return result;
 }
 
+int AudacityProject::FindClipBoundaries(double time, bool next, std::vector<FoundClipBoundary>& finalResults)
+{
+   const TrackList* tracks = GetTracks();
+
+   bool selected = std::any_of(tracks->begin(), tracks->end(), [] (const movable_ptr<Track>& t) {
+      return t->GetSelected() && t->GetKind() == Track::Wave; });
+
+   std::vector<FoundClipBoundary> results;
+   int nTracksSearched = 0;
+   for (auto& track : *tracks) {
+      if ( track->GetKind() == Track::Wave && !selected || track->GetSelected()) {
+         const WaveTrack* waveTrack = static_cast<const WaveTrack*>(track.get());
+         auto result = next ? FindNextClipBoundary(waveTrack, time) :
+            FindPrevClipBoundary(waveTrack, time);
+         nTracksSearched++;
+         if (result.nFound > 0)
+            results.push_back(result);
+      }
+   }
+
+   if (results.size() > 0) {
+      auto compare = [] (const FoundClipBoundary& a, const FoundClipBoundary&b)
+         { return a.time < b.time; };
+
+      auto result = next ? min_element(results.begin(), results.end(), compare ) :
+         max_element(results.begin(), results.end(), compare);
+
+      std::copy_if(results.begin(), results.end(), std::back_inserter(finalResults),
+         [&] (const FoundClipBoundary& r) { return r.time == (*result).time; });
+   }
+
+   return nTracksSearched;
+}
+
+
 void AudacityProject::OnCursorNextClipBoundary()
 {
    OnCursorClipBoundary(true);
@@ -6436,32 +6483,43 @@ void AudacityProject::OnCursorPrevClipBoundary()
 
 void AudacityProject::OnCursorClipBoundary(bool next)
 {
-   const auto track = mTrackPanel->GetFocusedTrack();
+   std::vector<FoundClipBoundary> results;
+   int nTracksSearched = FindClipBoundaries(mViewInfo.selectedRegion.t0(), next, results);
 
-   if (track && track->GetKind() == Track::Wave) {
-      const auto wt = static_cast<WaveTrack*>(track);
-      if (wt->GetNumClips()) {
-         auto result = next ? FindNextClipBoundary(wt, mViewInfo.selectedRegion.t0()) :
-            FindPrevClipBoundary(wt, mViewInfo.selectedRegion.t0());
+   if (results.size() > 0) {
+      double time = results[0].time;
+      mViewInfo.selectedRegion.setTimes(time, time);
+      ModifyState(false);
+      mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t0());
+      mTrackPanel->Refresh(false);
 
-         if (result.nFound > 0) {
-            mViewInfo.selectedRegion.setTimes(result.time, result.time);
-            ModifyState(false);
-            mTrackPanel->ScrollIntoView(mViewInfo.selectedRegion.t0());
-            mTrackPanel->Refresh(false);
-
-            wxString message;
-            message.Printf(wxT("%d %s %d %s"), result.index1 + 1, _("of"), wt->GetNumClips(),
-               result.clipStart1 ? _("start") : _("end"));
-            if (result.nFound == 2) {
-               wxString messageAdd;
-               messageAdd.Printf(wxT(" %s %d %s"), _("and"), result.index2 + 1,
-                  result.clipStart2 ? _("start") : _("end"));
-               message += messageAdd;
+      wxString message;
+      for (auto& result : results) {
+         wxString temp;
+         if (nTracksSearched > 1) {
+            if (result.waveTrack->GetName() == result.waveTrack->GetDefaultName()) {
+               auto track = std::find_if(GetTracks()->begin(), GetTracks()->end(),
+                  [&] (const movable_ptr<Track>& t) { return t.get() == result.waveTrack; });
+               temp.Printf(wxT("%s %d "), _("Track"), std::distance(GetTracks()->begin(), track) + 1);
             }
-            mTrackPanel->MessageForScreenReader(message);
+            else 
+               temp.Printf( wxT("%s "), result.waveTrack->GetName());
+
+            message += temp;
          }
+
+         temp.Printf(wxT("%s %d %s %d "), result.clipStart1 ? _("start") : _("end"),
+            result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
+         message += temp;
+         if (result.nFound == 2) {
+            temp.Printf(wxT("%s %s %d "), _("and"), result.clipStart2 ? _("start") : _("end"),
+               result.index2 + 1);
+            message += temp;
+         }
+         temp.Printf(wxT(", "));
+         message += temp;
       }
+      mTrackPanel->MessageForScreenReader(message);
    }
 }
 
