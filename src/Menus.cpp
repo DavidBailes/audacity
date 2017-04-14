@@ -5419,9 +5419,11 @@ void AudacityProject::OnSelectClipBoundary(bool next)
             message += temp;
          }
 
-         temp.Printf(wxT("%s %d %s %d "), result.clipStart1 ? _("start") : _("end"),
-            result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
-         message += temp;
+         message += (result.clipStart1 ? _("start") : _("end")) + wxT(" ");
+         if (result.waveTrack->GetNumClips() > 1 ) {
+            temp.Printf(wxT("%d %s %d "), result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
+            message += temp;
+         }
          if (result.nFound == 2) {
             temp.Printf(wxT("%s %s %d "), _("and"), result.clipStart2 ? _("start") : _("end"),
                result.index2 + 1);
@@ -6507,10 +6509,11 @@ void AudacityProject::OnCursorClipBoundary(bool next)
 
             message += temp;
          }
-
-         temp.Printf(wxT("%s %d %s %d "), result.clipStart1 ? _("start") : _("end"),
-            result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
-         message += temp;
+         message += (result.clipStart1 ? _("start") : _("end")) + wxT(" ");
+         if (result.waveTrack->GetNumClips() > 1 ) {
+            temp.Printf(wxT("%d %s %d "), result.index1 + 1, _("of"), result.waveTrack->GetNumClips());
+            message += temp;
+         }
          if (result.nFound == 2) {
             temp.Printf(wxT("%s %s %d "), _("and"), result.clipStart2 ? _("start") : _("end"),
                result.index2 + 1);
