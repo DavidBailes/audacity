@@ -6442,14 +6442,14 @@ int AudacityProject::FindClipBoundaries(double time, bool next, std::vector<Foun
 {
    const TrackList* tracks = GetTracks();
 
-   bool selected = std::any_of(tracks->begin(), tracks->end(), [] (const movable_ptr<Track>& t) {
+   bool anyWaveTracksSelected = std::any_of(tracks->begin(), tracks->end(), [] (const movable_ptr<Track>& t) {
       return t->GetSelected() && t->GetKind() == Track::Wave; });
 
    std::vector<FoundClipBoundary> results;
    int nTracksSearched = 0;
    for (auto& track : *tracks) {
-      if ( track->GetKind() == Track::Wave && !selected || track->GetSelected()) {
-         const WaveTrack* waveTrack = static_cast<const WaveTrack*>(track.get());
+      if ( track->GetKind() == Track::Wave && (!anyWaveTracksSelected || track->GetSelected())) {
+         auto waveTrack = static_cast<const WaveTrack*>(track.get());
          auto result = next ? FindNextClipBoundary(waveTrack, time) :
             FindPrevClipBoundary(waveTrack, time);
          nTracksSearched++;
@@ -6519,8 +6519,7 @@ void AudacityProject::OnCursorClipBoundary(bool next)
                result.index2 + 1);
             message += temp;
          }
-         temp.Printf(wxT(", "));
-         message += temp;
+         message += wxT(", ");
       }
       mTrackPanel->MessageForScreenReader(message);
    }
