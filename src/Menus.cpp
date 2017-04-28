@@ -5526,22 +5526,22 @@ AudacityProject::FoundClip AudacityProject::FindNextClip(const WaveTrack* wt, do
    result.waveTrack = wt;
    const auto clips = wt->SortedClipArray();
 
-   auto it = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
+   auto p = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
       return clip->GetStartTime() == t0; });
-   if (it != clips.end() && t1 < (*it)->GetEndTime()) {
+   if (p != clips.end() && (*p)->GetEndTime() > t1) {
       result.found = true;
-      result.startTime = (*it)->GetStartTime();
-      result.endTime = (*it)->GetEndTime();
-      result.index = it - clips.begin();
+      result.startTime = (*p)->GetStartTime();
+      result.endTime = (*p)->GetEndTime();
+      result.index = std::distance(clips.begin(), p);
    }
    else {
-      auto it = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
+      auto p = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
          return clip->GetStartTime() > t0; });
-      if (it != clips.end()) {
+      if (p != clips.end()) {
          result.found = true;
-         result.startTime = (*it)->GetStartTime();
-         result.endTime = (*it)->GetEndTime();
-         result.index = it - clips.begin();
+         result.startTime = (*p)->GetStartTime();
+         result.endTime = (*p)->GetEndTime();
+         result.index = std::distance(clips.begin(), p);
       }
    }
 
@@ -5554,22 +5554,22 @@ AudacityProject::FoundClip AudacityProject::FindPrevClip(const WaveTrack* wt, do
    result.waveTrack = wt;
    const auto clips = wt->SortedClipArray();
 
-   auto it = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
+   auto p = std::find_if(clips.begin(), clips.end(), [&] (const WaveClip* const& clip) {
       return clip->GetStartTime() == t0; });
-   if (it != clips.end() && t1 > (*it)->GetEndTime()) {
+   if (p != clips.end() && (*p)->GetEndTime() < t1) {
       result.found = true;
-      result.startTime = (*it)->GetStartTime();
-      result.endTime = (*it)->GetEndTime();
-      result.index = it - clips.begin();
+      result.startTime = (*p)->GetStartTime();
+      result.endTime = (*p)->GetEndTime();
+      result.index = std::distance(clips.begin(), p);
    }
    else {
-      auto rit = std::find_if(clips.rbegin(), clips.rend(), [&] (const WaveClip* const& clip) {
+      auto p = std::find_if(clips.rbegin(), clips.rend(), [&] (const WaveClip* const& clip) {
          return clip->GetStartTime() < t0; });
-      if (rit != clips.rend()) {
+      if (p != clips.rend()) {
          result.found = true;
-         result.startTime = (*rit)->GetStartTime();
-         result.endTime = (*rit)->GetEndTime();
-         result.index = static_cast<int>(clips.size()) - 1 - (rit - clips.rbegin());
+         result.startTime = (*p)->GetStartTime();
+         result.endTime = (*p)->GetEndTime();
+         result.index = static_cast<int>(clips.size()) - 1 - std::distance(clips.rbegin(), p);
       }
    }
 
@@ -5583,6 +5583,7 @@ int AudacityProject::FindClips(double t0, double t1, bool next, std::vector<Foun
    bool anyWaveTracksSelected = std::any_of(tracks->begin(), tracks->end(), [] (const movable_ptr<Track>& t) {
       return t->GetSelected() && t->GetKind() == Track::Wave; });
 
+   // first search the tracks individually
    std::vector<FoundClip> results;
    int nTracksSearched = 0;
    for (auto& track : *tracks) {
@@ -5596,30 +5597,37 @@ int AudacityProject::FindClips(double t0, double t1, bool next, std::vector<Foun
       }
    }
 
+   // if any clips were found, now process these clips
    if (results.size() > 0) {
+      // find the clip or clips with the min/max start time
       auto compareStart = [] (const FoundClip& a, const FoundClip& b)
          { return a.startTime < b.startTime; };
 
-      auto it = next ? std::min_element(results.begin(), results.end(), compareStart) :
+      auto p = next ? std::min_element(results.begin(), results.end(), compareStart) :
          std::max_element(results.begin(), results.end(), compareStart);
 
-      std::vector<FoundClip> temp;
-      std::copy_if(results.begin(), results.end(), std::back_inserter(temp),
-         [&] (const FoundClip& r) { return r.startTime == (*it).startTime; } );
+      std::vector<FoundClip> resultsStartTime;
+      std::copy_if(results.begin(), results.end(), std::back_inserter(resultsStartTime),
+         [&] (const FoundClip& r) { return r.startTime == (*p).startTime; } );
 
-      if (temp.size() > 1) {     // more than one clip with same start time
+      if (resultsStartTime.size() > 1) {
+         // more than one clip with same start time so
+         // find the clip or clips with the min/max end time
          auto compareEnd = [] (const FoundClip& a, const FoundClip& b)
             { return a.endTime < b.endTime; };
 
-         auto it = next ? std::min_element(temp.begin(), temp.end(), compareEnd) :
-            std::max_element(temp.begin(), temp.end(), compareEnd);
+         auto p = next ? std::min_element(resultsStartTime.begin(),
+            resultsStartTime.end(), compareEnd) :
+            std::max_element(resultsStartTime.begin(),
+            resultsStartTime.end(), compareEnd);
 
          finalResults.clear();
-         std::copy_if(temp.begin(), temp.end(), std::back_inserter(finalResults),
-            [&] (const FoundClip& r) { return r.endTime == (*it).endTime; } );
+         std::copy_if(resultsStartTime.begin(), resultsStartTime.end(),
+            std::back_inserter(finalResults),
+            [&] (const FoundClip& r) { return r.endTime == (*p).endTime; } );
       }
       else {
-         finalResults = temp;
+         finalResults = resultsStartTime;
       }
    }
 
@@ -5643,6 +5651,8 @@ void AudacityProject::OnSelectClip(bool next)
       mViewInfo.selectedRegion.t1(), next, results);
 
    if (results.size() > 0) {
+      // note that if there is more than one result, each has the same start
+      // and end time
       double t0 = results[0].startTime;
       double t1 = results[0].endTime;
       mViewInfo.selectedRegion.setTimes(t0, t1);
