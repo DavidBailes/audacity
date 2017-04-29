@@ -5579,6 +5579,7 @@ AudacityProject::FoundClip AudacityProject::FindPrevClip(const WaveTrack* wt, do
 int AudacityProject::FindClips(double t0, double t1, bool next, std::vector<FoundClip>& finalResults)
 {
    const TrackList* tracks = GetTracks();
+   finalResults.clear();
 
    bool anyWaveTracksSelected = std::any_of(tracks->begin(), tracks->end(), [] (const movable_ptr<Track>& t) {
       return t->GetSelected() && t->GetKind() == Track::Wave; });
@@ -5597,8 +5598,8 @@ int AudacityProject::FindClips(double t0, double t1, bool next, std::vector<Foun
       }
    }
 
-   // if any clips were found, now process these clips
    if (results.size() > 0) {
+      // if any clips were found,
       // find the clip or clips with the min/max start time
       auto compareStart = [] (const FoundClip& a, const FoundClip& b)
          { return a.startTime < b.startTime; };
@@ -5621,7 +5622,6 @@ int AudacityProject::FindClips(double t0, double t1, bool next, std::vector<Foun
             std::max_element(resultsStartTime.begin(),
             resultsStartTime.end(), compareEnd);
 
-         finalResults.clear();
          std::copy_if(resultsStartTime.begin(), resultsStartTime.end(),
             std::back_inserter(finalResults),
             [&] (const FoundClip& r) { return r.endTime == (*p).endTime; } );
