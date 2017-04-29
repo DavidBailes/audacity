@@ -409,6 +409,7 @@ int FindClipBoundaries(double time, bool next, std::vector<FoundClipBoundary>& r
 void OnCursorNextClipBoundary();
 void OnCursorPrevClipBoundary();
 void OnCursorClipBoundary(bool next);
+wxString ClipBoundaryMessage(int nTracksSearched, const std::vector<FoundClipBoundary>& results);
 
 void OnAlignNoSync(int index);
 void OnAlign(int index);
