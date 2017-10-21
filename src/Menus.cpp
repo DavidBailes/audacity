@@ -6677,7 +6677,7 @@ void AudacityProject::OnMixerBoard()
    }
    mMixerBoardFrame->Show();
    mMixerBoardFrame->Raise();
-   mMixerBoardFrame->SetFocus();
+   //mMixerBoardFrame->SetFocus();
 }
 
 void AudacityProject::OnPlotSpectrum()

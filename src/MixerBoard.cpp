@@ -869,7 +869,7 @@ MixerBoard::MixerBoard(AudacityProject* pProject,
                         wxFrame* parent,
                         const wxPoint& pos /*= wxDefaultPosition*/,
                         const wxSize& size /*= wxDefaultSize*/)
-: wxWindow(parent, -1, pos, size)
+: wxPanelWrapper(parent, -1, pos, size)
 {
    // public data members
 

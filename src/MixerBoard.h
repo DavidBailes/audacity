@@ -201,7 +201,7 @@ public:
 class MixerBoardFrame;
 class TrackList;
 
-class MixerBoard final : public wxWindow
+class MixerBoard final : public wxPanelWrapper
 {
    friend class MixerBoardFrame;
 
