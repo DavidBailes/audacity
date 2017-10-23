@@ -861,7 +861,7 @@ void MixerBoardScrolledWindow::OnMouseEvent(wxMouseEvent& event)
 #define MIXER_BOARD_MIN_WIDTH       kTripleInset + kMixerTrackClusterWidth + kTripleInset
 
 
-BEGIN_EVENT_TABLE(MixerBoard, wxWindow)
+BEGIN_EVENT_TABLE(MixerBoard, wxPanelWrapper)
    EVT_SIZE(MixerBoard::OnSize)
 END_EVENT_TABLE()
 
