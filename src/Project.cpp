@@ -3033,8 +3033,10 @@ void AudacityProject::OpenFile(const wxString &fileNameArg, bool addtohistory)
       // If it's not XML, try opening it as any other form of audio
       if (Importer::IsMidi(fileName))
          DoImportMIDI(this, fileName);
-      else
+      else {
          Import(fileName);
+         ZoomAfterImport(nullptr);
+      }
       return;
    }
 
