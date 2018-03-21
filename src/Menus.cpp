@@ -8463,6 +8463,20 @@ void AudacityProject::OnRescanDevices(const CommandContext &WXUNUSED(context) )
 
 int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus)
 {
+   wxString title;      // of label
+
+   bool useDialog = true;
+   if (useDialog) {
+      AudacityTextEntryDialog d(this,
+                             _("Name:"),
+                             _("Enter name of new label"));
+      d.SetName(d.GetTitle());
+      if (d.ShowModal() == wxID_CANCEL) {
+         return -1;
+      }
+      title = d.GetValue().Strip(wxString::both);
+   }
+
    LabelTrack *lt = NULL;
 
    // If the focused track is a label track, use that
@@ -8518,7 +8532,9 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
          focusTrackNumber = -1;
    }
 
-   int index = lt->AddLabel(region, wxString(), focusTrackNumber);
+   int index = lt->AddLabel(region, title, focusTrackNumber);
+   if (useDialog)
+      lt->Unselect();
 
    PushState(_("Added label"), _("Label"));
 
