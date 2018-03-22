@@ -8465,11 +8465,12 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
 {
    wxString title;      // of label
 
-   bool useDialog = true;
+   bool useDialog;
+   gPrefs->Read(wxT("/GUI/DialogForLabelName"), &useDialog, false);
    if (useDialog) {
       AudacityTextEntryDialog d(this,
                              _("Name:"),
-                             _("Enter name of new label"));
+                             _("Name of new label"));
       d.SetName(d.GetTitle());
       if (d.ShowModal() == wxID_CANCEL) {
          return -1;
@@ -8517,7 +8518,7 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
    lt->SetSelected(true);
 
    int focusTrackNumber = -1;
-   if (pFocusedTrack && preserveFocus) {
+   if (pFocusedTrack && preserveFocus && !useDialog) {
       // Must remember the track to re-focus after finishing a label edit.
       // do NOT identify it by a pointer, which might dangle!  Identify
       // by position.
@@ -8539,7 +8540,9 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
    PushState(_("Added label"), _("Label"));
 
    RedrawProject();
-   mTrackPanel->EnsureVisible((Track *)lt);
+   if (!useDialog) {
+      mTrackPanel->EnsureVisible((Track *)lt);
+   }
    mTrackPanel->SetFocus();
 
    return index;
