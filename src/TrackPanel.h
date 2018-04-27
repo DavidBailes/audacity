@@ -356,6 +356,11 @@ public:
 
    void MakeParentRedrawScrollbars();
 
+   // If label, rectangle includes track control panel only.
+   // If !label, rectangle includes all of that, and the vertical ruler, and
+   // the proper track area.
+   wxRect FindTrackRect( const Track * target, bool label );
+
 protected:
    void MakeParentModifyState(bool bWantsAutoSave);    // if true, writes auto-save file. Should set only if you really want the state change restored after
                                                                // a crash, as it can take many seconds for large (eg. 10 track-hours) projects
@@ -371,11 +376,6 @@ protected:
    void HandleMotion( wxMouseState &state, bool doHit = true );
    void HandleMotion
       ( const TrackPanelMouseState &tpmState, bool doHit = true );
-
-   // If label, rectangle includes track control panel only.
-   // If !label, rectangle includes all of that, and the vertical ruler, and
-   // the proper track area.
-   wxRect FindTrackRect( const Track * target, bool label );
 
    int GetVRulerWidth() const;
    int GetVRulerOffset() const { return mTrackInfo.GetTrackInfoWidth(); }

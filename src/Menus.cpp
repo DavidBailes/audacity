@@ -8468,9 +8468,19 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
    bool useDialog;
    gPrefs->Read(wxT("/GUI/DialogForLabelName"), &useDialog, false);
    if (useDialog) {
+      wxPoint position;
+      position.x = mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0());
+
+      wxRect rect = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false);
+      position.y = rect.y + rect.height;
+
+      position = mTrackPanel->ClientToScreen(position);
       AudacityTextEntryDialog d(this,
                              _("Name:"),
-                             _("Name of new label"));
+                             _("Name of new label"),
+                             wxEmptyString,
+                             wxOK | wxCANCEL,
+                             position);
       d.SetName(d.GetTitle());
       if (d.ShowModal() == wxID_CANCEL) {
          return -1;
