@@ -8468,24 +8468,31 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
    bool useDialog;
    gPrefs->Read(wxT("/GUI/DialogForLabelName"), &useDialog, false);
    if (useDialog) {
-      wxPoint position;
-      position.x = mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0());
-
-      wxRect rect = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false);
-      position.y = rect.y + rect.height;
-
+      wxPoint position = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false).GetBottomLeft();
+      position.x += mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0());
+      position.y += 2;
       position = mTrackPanel->ClientToScreen(position);
-      AudacityTextEntryDialog d(this,
+      AudacityTextEntryDialog dialog{this,
                              _("Name:"),
-                             _("Name of new label"),
+                             _("New label"),
                              wxEmptyString,
                              wxOK | wxCANCEL,
-                             position);
-      d.SetName(d.GetTitle());
-      if (d.ShowModal() == wxID_CANCEL) {
+                             position};
+      wxRect dialogScreenRect = dialog.GetScreenRect();
+      wxRect projScreenRect = GetScreenRect();
+      wxPoint max = projScreenRect.GetBottomRight() + wxPoint{-dialogScreenRect.width, -dialogScreenRect.height};
+      if (dialogScreenRect.x > max.x) {
+         position.x = max.x;
+         dialog.Move(position);
+      }
+      if (dialogScreenRect.y > max.y) {
+         position.y = max.y;
+         dialog.Move(position);
+      }
+      if (dialog.ShowModal() == wxID_CANCEL) {
          return -1;
       }
-      title = d.GetValue().Strip(wxString::both);
+      title = dialog.GetValue().Strip(wxString::both);
    }
 
    LabelTrack *lt = NULL;
