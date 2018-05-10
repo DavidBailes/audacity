@@ -380,11 +380,11 @@ protected:
    int GetVRulerWidth() const;
    int GetVRulerOffset() const { return mTrackInfo.GetTrackInfoWidth(); }
 
+public:
    int GetLabelWidth() const { return mTrackInfo.GetTrackInfoWidth() + GetVRulerWidth(); }
 
 // JKC Nov-2011: These four functions only used from within a dll such as mod-track-panel
 // They work around some messy problems with constructors.
-public:
    const TrackList * GetTracks() const { return mTracks.get(); }
    TrackList * GetTracks() { return mTracks.get(); }
    ViewInfo * GetViewInfo(){ return mViewInfo;}

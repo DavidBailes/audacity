@@ -82,8 +82,8 @@ void TracksBehaviorsPrefs::PopulateOrExchange(ShuttleGui & S)
       S.TieCheckBox(_("&Type to create a label"),
                     wxT("/GUI/TypeToCreateLabel"),
                     true);
-      S.TieCheckBox(_("&Use dialog for label name when using a command to create a new label"),
-                    wxT("/GUI/DialogForLabelName"),
+      S.TieCheckBox(_("&Use dialog for the name of a new label"),
+                    wxT("/GUI/DialogForNameNewLabel"),
                     false);
 #ifdef EXPERIMENTAL_SCROLLING_LIMITS
       S.TieCheckBox(_("Enable scrolling left of &zero"),

@@ -8461,38 +8461,47 @@ void AudacityProject::OnRescanDevices(const CommandContext &WXUNUSED(context) )
    DeviceManager::Instance()->Rescan();
 }
 
+int AudacityProject::DialogForLabelName(const wxString& initialValue, wxString& value)
+{
+   wxPoint position = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false).GetBottomLeft();
+   position.x += mTrackPanel->GetLabelWidth() + mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0()) - 40;
+   position.y += 2;
+   position = mTrackPanel->ClientToScreen(position);
+   AudacityTextEntryDialog dialog{ this,
+      _("Name:"),
+      _("New label"),
+      initialValue,
+      wxOK | wxCANCEL,
+      position };
+   wxRect dialogScreenRect = dialog.GetScreenRect();
+   wxRect projScreenRect = GetScreenRect();
+   wxPoint max = projScreenRect.GetBottomRight() + wxPoint{ -dialogScreenRect.width, -dialogScreenRect.height };
+   if (dialogScreenRect.x > max.x) {
+      position.x = max.x;
+      dialog.Move(position);
+   }
+   if (dialogScreenRect.y > max.y) {
+      position.y = max.y;
+      dialog.Move(position);
+   }
+
+   dialog.SetInsertionPointEnd();      // because, by default, initial text is selected
+   int status = dialog.ShowModal();
+   if (status != wxID_CANCEL)
+      value = dialog.GetValue().Strip(wxString::both);
+
+   return status;
+}
+
 int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus)
 {
    wxString title;      // of label
 
    bool useDialog;
-   gPrefs->Read(wxT("/GUI/DialogForLabelName"), &useDialog, false);
+   gPrefs->Read(wxT("/GUI/DialogForNameNewLabel"), &useDialog, false);
    if (useDialog) {
-      wxPoint position = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false).GetBottomLeft();
-      position.x += mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0());
-      position.y += 2;
-      position = mTrackPanel->ClientToScreen(position);
-      AudacityTextEntryDialog dialog{this,
-                             _("Name:"),
-                             _("New label"),
-                             wxEmptyString,
-                             wxOK | wxCANCEL,
-                             position};
-      wxRect dialogScreenRect = dialog.GetScreenRect();
-      wxRect projScreenRect = GetScreenRect();
-      wxPoint max = projScreenRect.GetBottomRight() + wxPoint{-dialogScreenRect.width, -dialogScreenRect.height};
-      if (dialogScreenRect.x > max.x) {
-         position.x = max.x;
-         dialog.Move(position);
-      }
-      if (dialogScreenRect.y > max.y) {
-         position.y = max.y;
-         dialog.Move(position);
-      }
-      if (dialog.ShowModal() == wxID_CANCEL) {
+      if (DialogForLabelName(wxEmptyString, title) == wxID_CANCEL)
          return -1;
-      }
-      title = dialog.GetValue().Strip(wxString::both);
    }
 
    LabelTrack *lt = NULL;
@@ -8534,25 +8543,29 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
 //   SelectNone();
    lt->SetSelected(true);
 
-   int focusTrackNumber = -1;
-   if (pFocusedTrack && preserveFocus && !useDialog) {
-      // Must remember the track to re-focus after finishing a label edit.
-      // do NOT identify it by a pointer, which might dangle!  Identify
-      // by position.
-      TrackListIterator iter(GetTracks());
-      Track *track = iter.First();
-      do
-         ++focusTrackNumber;
-      while (track != pFocusedTrack &&
-             NULL != (track = iter.Next()));
-      if (!track)
-         // How could we not find it?
-         focusTrackNumber = -1;
+   int focusTrackNumber;
+   if (useDialog) {
+      focusTrackNumber = -2;
+   }
+   else {
+      focusTrackNumber = -1;
+      if (pFocusedTrack && preserveFocus) {
+         // Must remember the track to re-focus after finishing a label edit.
+         // do NOT identify it by a pointer, which might dangle!  Identify
+         // by position.
+         TrackListIterator iter(GetTracks());
+         Track *track = iter.First();
+         do
+            ++focusTrackNumber;
+         while (track != pFocusedTrack &&
+                NULL != (track = iter.Next()));
+         if (!track)
+            // How could we not find it?
+            focusTrackNumber = -1;
+      }
    }
 
    int index = lt->AddLabel(region, title, focusTrackNumber);
-   if (useDialog)
-      lt->Unselect();
 
    PushState(_("Added label"), _("Label"));
 
