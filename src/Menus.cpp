@@ -8464,8 +8464,9 @@ void AudacityProject::OnRescanDevices(const CommandContext &WXUNUSED(context) )
 int AudacityProject::DialogForLabelName(const wxString& initialValue, wxString& value)
 {
    wxPoint position = mTrackPanel->FindTrackRect(mTrackPanel->GetFocusedTrack(), false).GetBottomLeft();
+   // the start of the text in the text box will be roughly in line with Audacity's edit cursor 
    position.x += mTrackPanel->GetLabelWidth() + mViewInfo.TimeToPosition(mViewInfo.selectedRegion.t0()) - 40;
-   position.y += 2;
+   position.y += 2;  // just below the bottom of the track
    position = mTrackPanel->ClientToScreen(position);
    AudacityTextEntryDialog dialog{ this,
       _("Name:"),
@@ -8473,6 +8474,8 @@ int AudacityProject::DialogForLabelName(const wxString& initialValue, wxString& 
       initialValue,
       wxOK | wxCANCEL,
       position };
+
+   // keep the dialog within Audacity's window, so that the dialog is always fully visible
    wxRect dialogScreenRect = dialog.GetScreenRect();
    wxRect projScreenRect = GetScreenRect();
    wxPoint max = projScreenRect.GetBottomRight() + wxPoint{ -dialogScreenRect.width, -dialogScreenRect.height };
@@ -8487,8 +8490,10 @@ int AudacityProject::DialogForLabelName(const wxString& initialValue, wxString& 
 
    dialog.SetInsertionPointEnd();      // because, by default, initial text is selected
    int status = dialog.ShowModal();
-   if (status != wxID_CANCEL)
-      value = dialog.GetValue().Strip(wxString::both);
+   if (status != wxID_CANCEL) {
+      value = dialog.GetValue();
+      value.Trim(true).Trim(false);
+   }
 
    return status;
 }
@@ -8501,7 +8506,7 @@ int AudacityProject::DoAddLabel(const SelectedRegion &region, bool preserveFocus
    gPrefs->Read(wxT("/GUI/DialogForNameNewLabel"), &useDialog, false);
    if (useDialog) {
       if (DialogForLabelName(wxEmptyString, title) == wxID_CANCEL)
-         return -1;
+         return -1;     // index
    }
 
    LabelTrack *lt = NULL;
