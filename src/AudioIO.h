@@ -583,8 +583,6 @@ protected:
    static int mCachedCaptureIndex;
    static std::vector<long> mCachedCaptureRates;
    static std::vector<long> mCachedSampleRates;
-   static double mCachedBestRateIn;
-   static double mCachedBestRateOut;
 
    // Serialize main thread and PortAudio thread's attempts to pause and change
    // the state used by the third, Audio thread.

@@ -501,8 +501,6 @@ std::vector<long> AudioIoCallback::mCachedPlaybackRates;
 int AudioIoCallback::mCachedCaptureIndex = -1;
 std::vector<long> AudioIoCallback::mCachedCaptureRates;
 std::vector<long> AudioIoCallback::mCachedSampleRates;
-double AudioIoCallback::mCachedBestRateIn = 0.0;
-double AudioIoCallback::mCachedBestRateOut;
 
 enum {
    // This is the least positive latency we can
@@ -1267,7 +1265,6 @@ void AudioIO::HandleDeviceChange()
    mCachedSampleRates = GetSupportedSampleRates(playDeviceNum, recDeviceNum);
    mCachedPlaybackIndex = playDeviceNum;
    mCachedCaptureIndex = recDeviceNum;
-   mCachedBestRateIn = 0.0;
 
 #if defined(USE_PORTMIXER)
 
@@ -3104,15 +3101,6 @@ int AudioIO::GetOptimalSupportedSampleRate()
 
 double AudioIO::GetBestRate(bool capturing, bool playing, double sampleRate)
 {
-   // Check if we can use the cached value
-   if (mCachedBestRateIn != 0.0 && mCachedBestRateIn == sampleRate) {
-      return mCachedBestRateOut;
-   }
-
-   // In order to cache the value, all early returns should instead set retval
-   // and jump to finished
-   double retval;
-
    std::vector<long> rates;
    if (capturing) wxLogDebug(wxT("AudioIO::GetBestRate() for capture"));
    if (playing) wxLogDebug(wxT("AudioIO::GetBestRate() for playback"));
@@ -3134,8 +3122,7 @@ double AudioIO::GetBestRate(bool capturing, bool playing, double sampleRate)
 
    if (make_iterator_range(rates).contains(rate)) {
       wxLogDebug(wxT("GetBestRate() Returning %.0ld Hz"), rate);
-      retval = rate;
-      goto finished;
+      return rate;
       /* the easy case - the suggested rate (project rate) is in the list, and
        * we can just accept that and send back to the caller. This should be
        * the case for most users most of the time (all of the time on
@@ -3153,8 +3140,7 @@ double AudioIO::GetBestRate(bool capturing, bool playing, double sampleRate)
    if (rates.empty()) {
       /* we're stuck - there are no supported rates with this hardware. Error */
       wxLogDebug(wxT("GetBestRate() Error - no supported sample rates"));
-      retval = 0.0;
-      goto finished;
+      return 0.0;
    }
    int i;
    for (i = 0; i < (int)rates.size(); i++)  // for each supported rate
@@ -3162,19 +3148,12 @@ double AudioIO::GetBestRate(bool capturing, bool playing, double sampleRate)
          if (rates[i] > rate) {
             // supported rate is greater than requested rate
             wxLogDebug(wxT("GetBestRate() Returning next higher rate - %.0ld Hz"), rates[i]);
-            retval = rates[i];
-            goto finished;
+            return rates[i];
          }
          }
 
    wxLogDebug(wxT("GetBestRate() Returning highest rate - %.0ld Hz"), rates.back());
-   retval = rates.back(); // the highest available rate
-   goto finished;
-
-finished:
-   mCachedBestRateIn = sampleRate;
-   mCachedBestRateOut = retval;
-   return retval;
+   return rates.back(); // the highest available rate
 }
 
 
