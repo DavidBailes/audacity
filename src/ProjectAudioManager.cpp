@@ -743,7 +743,8 @@ void ProjectAudioManager::OnPause()
    // it is confusing to be in a paused scrub state.
    bool bStopInstead = paused &&
       gAudioIO->IsScrubbing() && 
-      !scrubber.IsSpeedPlaying();
+      !scrubber.IsSpeedPlaying() &&
+      !scrubber.IsKeyboardScrubbing();
 
    if (bStopInstead) {
       Stop();

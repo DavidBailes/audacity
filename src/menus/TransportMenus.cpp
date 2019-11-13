@@ -191,6 +191,58 @@ void DoMoveToLabel(AudacityProject &project, bool next)
    }
 }
 
+
+void DoKeyboardScrub(AudacityProject& project, bool backwards, bool keyUp)
+{
+   static bool scrubbing = false;
+   static double initT0 = 0;
+   static double initT1 = 0;
+
+   if (keyUp) {
+      auto gAudioIO = AudioIOBase::Get();
+      if (gAudioIO->IsStreamActive() && scrubbing) {
+         auto time = gAudioIO->GetStreamTime();
+         auto &viewInfo = ViewInfo::Get(project);
+         auto &selection = viewInfo.selectedRegion;
+
+         if (selection.t0() == initT0 && selection.t1() == initT1) {
+            double endTime = TrackList::Get(project).GetEndTime();
+            time = std::min(time, endTime);
+            time = std::max(time, 0.0);
+            selection.setTimes(time, time);
+            ProjectHistory::Get(project).ModifyState(false);
+         }
+
+         auto &projectAudioManager = ProjectAudioManager::Get(project);
+         projectAudioManager.Stop();
+      }
+
+      scrubbing = false;
+      return;
+   }
+
+
+   auto gAudioIO = AudioIOBase::Get();
+
+   if (!gAudioIO->IsBusy()) {
+      auto &viewInfo = ViewInfo::Get(project);
+      auto &selection = viewInfo.selectedRegion;
+      double endTime = TrackList::Get(project).GetEndTime();
+      double t0 = selection.t0();
+
+     
+      if ((!backwards && t0 >= 0 && t0 < endTime) ||
+         (backwards && t0 > 0 && t0 <= endTime)) {
+
+         initT0 = selection.t0();
+         initT1 = selection.t1();
+
+         auto &scrubber = Scrubber::Get(project);
+         scrubbing = scrubber.StartKeyboardScrubbing(initT0, backwards);
+      }
+   }
+}
+
 }
 
 // Menu handler functions
@@ -784,6 +836,32 @@ void OnPlayCutPreview(const CommandContext &context)
    );
 }
 
+void OnKeyboardScrubBackwards(const CommandContext &context)
+{
+   auto &project = context.project;
+   auto evt = context.pEvt;
+   if (evt)
+      DoKeyboardScrub(project, true, evt->GetEventType() == wxEVT_KEY_UP);
+   else {              // called from menu, so simulate keydown and keyup
+      DoKeyboardScrub(project, true, false);
+      DoKeyboardScrub(project, true, true);
+   }
+}
+
+
+void OnKeyboardScrubForwards(const CommandContext &context)
+{
+   auto &project = context.project;
+   auto evt = context.pEvt;
+   if (evt)
+      DoKeyboardScrub(project, false, evt->GetEventType() == wxEVT_KEY_UP);
+   else {              // called from menu, so simulate keydown and keyup
+      DoKeyboardScrub(project, false, false);
+      DoKeyboardScrub(project, false, true);
+   }
+}
+
+
 void OnPlayAtSpeed(const CommandContext &context)
 {
    auto &project = context.project;
@@ -1047,7 +1125,13 @@ MenuTable::BaseItemPtr ExtraTransportMenu( AudacityProject & )
          wxT("Ctrl+Shift+F7") ),
       Command( wxT("PlayCutPreview"), XXO("Play C&ut Preview"),
          FN(OnPlayCutPreview),
-         CaptureNotBusyFlag, wxT("C") )
+         CaptureNotBusyFlag, wxT("C") ),
+      Command(wxT("KeyboardScrubBackwards"), XXO("Scrub Backwards"),
+         FN(OnKeyboardScrubBackwards),
+         CaptureNotBusyFlag, wxT("U\twantKeyup")),
+      Command(wxT("KeyboardScrubForwards"), XXO("Scrub Forwards"),
+         FN(OnKeyboardScrubForwards),
+         CaptureNotBusyFlag, wxT("I\twantKeyup"))
    );
 }
 
