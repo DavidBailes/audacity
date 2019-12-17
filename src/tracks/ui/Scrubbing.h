@@ -79,6 +79,8 @@ public:
    { return mSpeedPlaying;}
    bool IsSpeedPlaying() const
    { return IsScrubbing() && mSpeedPlaying; }
+   bool WasKeyboardScrubbing() const
+   { return mKeyboardScrubbing; }
    bool IsKeyboardScrubbing() const
    { return IsScrubbing() && mKeyboardScrubbing; }
    // True iff the user has clicked to start scrub and not yet stopped,

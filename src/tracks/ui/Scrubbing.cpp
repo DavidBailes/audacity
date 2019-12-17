@@ -574,7 +574,7 @@ bool Scrubber::StartKeyboardScrubbing(double time0, bool backwards)
    mScrubStartPosition = 0;   // so that HasMark() is true
    mSpeedPlaying = false;
    mKeyboardScrubbing = true;
-   mMaxSpeed = speed;
+   mMaxSpeed = DBL_MAX;
    mDragging = false;
 
    auto options = DefaultSpeedPlayOptions(*mProject);
@@ -592,8 +592,8 @@ bool Scrubber::StartKeyboardScrubbing(double time0, bool backwards)
    options.pScrubbingOptions = &mOptions;
    options.envelope = nullptr;
    mOptions.delay = (ScrubPollInterval_ms / 1000.0);
-   mOptions.minSpeed = speed - 0.01;
-   mOptions.maxSpeed = speed + 0.01;
+   mOptions.minSpeed = 0.0;
+   mOptions.maxSpeed = mMaxSpeed;
 
    mOptions.minTime = 0;
    mOptions.maxTime = std::max(0.0, TrackList::Get(*mProject).GetEndTime());
@@ -670,8 +670,8 @@ void Scrubber::ContinueScrubbingPoll()
    }
    else if (mKeyboardScrubbing) {
       double speed = GetKeyboardScrubbingSpeed();
-      mOptions.minSpeed = speed - 0.01;
-      mOptions.maxSpeed = speed + 0.01;
+      mOptions.minSpeed = 0.0;
+      mOptions.maxSpeed = mMaxSpeed;
       mOptions.adjustStart = false;
       mOptions.bySpeed = true;
       if (mOptions.backwards)
