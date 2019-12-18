@@ -194,13 +194,13 @@ void DoMoveToLabel(AudacityProject &project, bool next)
 
 void DoKeyboardScrub(AudacityProject& project, bool backwards, bool keyUp)
 {
-   static bool scrubbing = false;
    static double initT0 = 0;
    static double initT1 = 0;
 
    if (keyUp) {
-      auto gAudioIO = AudioIOBase::Get();
-      if (gAudioIO->IsStreamActive() && scrubbing) {
+      auto &scrubber = Scrubber::Get(project);
+      if (scrubber.IsKeyboardScrubbing()) {
+         auto gAudioIO = AudioIOBase::Get();
          auto time = gAudioIO->GetStreamTime();
          auto &viewInfo = ViewInfo::Get(project);
          auto &selection = viewInfo.selectedRegion;
@@ -213,32 +213,27 @@ void DoKeyboardScrub(AudacityProject& project, bool backwards, bool keyUp)
             ProjectHistory::Get(project).ModifyState(false);
          }
 
-         auto &projectAudioManager = ProjectAudioManager::Get(project);
-         projectAudioManager.Stop();
+         scrubber.Cancel();
+         ProjectAudioManager::Get(project).Stop();
       }
-
-      scrubbing = false;
-      return;
    }
+   else {      // KeyDown
+      auto gAudioIO = AudioIOBase::Get();
+      if (!gAudioIO->IsBusy()) {
+         auto &viewInfo = ViewInfo::Get(project);
+         auto &selection = viewInfo.selectedRegion;
+         double endTime = TrackList::Get(project).GetEndTime();
+         double t0 = selection.t0();
+    
+         if ((!backwards && t0 >= 0 && t0 < endTime) ||
+            (backwards && t0 > 0 && t0 <= endTime)) {
 
+            initT0 = selection.t0();
+            initT1 = selection.t1();
 
-   auto gAudioIO = AudioIOBase::Get();
-
-   if (!gAudioIO->IsBusy()) {
-      auto &viewInfo = ViewInfo::Get(project);
-      auto &selection = viewInfo.selectedRegion;
-      double endTime = TrackList::Get(project).GetEndTime();
-      double t0 = selection.t0();
-
-     
-      if ((!backwards && t0 >= 0 && t0 < endTime) ||
-         (backwards && t0 > 0 && t0 <= endTime)) {
-
-         initT0 = selection.t0();
-         initT1 = selection.t1();
-
-         auto &scrubber = Scrubber::Get(project);
-         scrubbing = scrubber.StartKeyboardScrubbing(initT0, backwards);
+            auto &scrubber = Scrubber::Get(project);
+            scrubber.StartKeyboardScrubbing(initT0, backwards);
+         }
       }
    }
 }

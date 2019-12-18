@@ -593,7 +593,7 @@ bool Scrubber::StartKeyboardScrubbing(double time0, bool backwards)
    options.envelope = nullptr;
    mOptions.delay = (ScrubPollInterval_ms / 1000.0);
    mOptions.minSpeed = 0.0;
-   mOptions.maxSpeed = mMaxSpeed;
+   mOptions.maxSpeed = DBL_MAX;
 
    mOptions.minTime = 0;
    mOptions.maxTime = std::max(0.0, TrackList::Get(*mProject).GetEndTime());
@@ -671,7 +671,7 @@ void Scrubber::ContinueScrubbingPoll()
    else if (mKeyboardScrubbing) {
       double speed = GetKeyboardScrubbingSpeed();
       mOptions.minSpeed = 0.0;
-      mOptions.maxSpeed = mMaxSpeed;
+      mOptions.maxSpeed = DBL_MAX;
       mOptions.adjustStart = false;
       mOptions.bySpeed = true;
       if (mOptions.backwards)
@@ -936,6 +936,12 @@ void Scrubber::OnActivateOrDeactivateApp(wxActivateEvent &event)
       Pause( true );
    else if (!IsScrubbing())
       Pause( true );
+
+   // Stop keyboard scrubbing if losing focus
+   else if (mKeyboardScrubbing && !event.GetActive()) {
+      Cancel();
+      ProjectAudioManager::Get(*mProject).Stop();
+   }
 
    // Speed playing does not pause if losing focus.
    else if (mSpeedPlaying)
