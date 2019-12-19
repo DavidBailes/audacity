@@ -219,7 +219,8 @@ void DoKeyboardScrub(AudacityProject& project, bool backwards, bool keyUp)
    }
    else {      // KeyDown
       auto gAudioIO = AudioIOBase::Get();
-      if (!gAudioIO->IsBusy()) {
+      auto &scrubber = Scrubber::Get(project);
+      if (!gAudioIO->IsBusy() && !scrubber.HasMark()) {
          auto &viewInfo = ViewInfo::Get(project);
          auto &selection = viewInfo.selectedRegion;
          double endTime = TrackList::Get(project).GetEndTime();
@@ -230,8 +231,7 @@ void DoKeyboardScrub(AudacityProject& project, bool backwards, bool keyUp)
 
             initT0 = selection.t0();
             initT1 = selection.t1();
-
-            auto &scrubber = Scrubber::Get(project);
+            
             scrubber.StartKeyboardScrubbing(initT0, backwards);
          }
       }
@@ -1121,12 +1121,12 @@ MenuTable::BaseItemPtr ExtraTransportMenu( AudacityProject & )
       Command( wxT("PlayCutPreview"), XXO("Play C&ut Preview"),
          FN(OnPlayCutPreview),
          CaptureNotBusyFlag, wxT("C") ),
-      Command(wxT("KeyboardScrubBackwards"), XXO("Scrub Backwards"),
+      Command(wxT("KeyboardScrubBackwards"), XXO("Scrub Bac&kwards"),
          FN(OnKeyboardScrubBackwards),
-         CaptureNotBusyFlag, wxT("U\twantKeyup")),
-      Command(wxT("KeyboardScrubForwards"), XXO("Scrub Forwards"),
+         CaptureNotBusyFlag | CanStopAudioStreamFlag, wxT("U\twantKeyup")),
+      Command(wxT("KeyboardScrubForwards"), XXO("Scrub For&wards"),
          FN(OnKeyboardScrubForwards),
-         CaptureNotBusyFlag, wxT("I\twantKeyup"))
+         CaptureNotBusyFlag | CanStopAudioStreamFlag, wxT("I\twantKeyup"))
    );
 }
 
