@@ -49,7 +49,6 @@ struct ScrubbingOptions {
 
    bool bySpeed {};
    bool isPlayingAtSpeed{};
-   bool backwards{};
 
    double delay {};
 

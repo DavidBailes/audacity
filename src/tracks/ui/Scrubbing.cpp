@@ -570,10 +570,10 @@ bool Scrubber::StartKeyboardScrubbing(double time0, bool backwards)
    if (HasMark() || AudioIO::Get()->IsBusy())
       return false;
    
-   double speed = GetKeyboardScrubbingSpeed();
    mScrubStartPosition = 0;   // so that HasMark() is true
    mSpeedPlaying = false;
    mKeyboardScrubbing = true;
+   mBackwards = backwards;
    mMaxSpeed = ScrubbingOptions::MaxAllowedScrubSpeed();
    mDragging = false;
 
@@ -601,7 +601,6 @@ bool Scrubber::StartKeyboardScrubbing(double time0, bool backwards)
    mOptions.bySpeed = true;
    mOptions.adjustStart = false;
    mOptions.isPlayingAtSpeed = false;
-   mOptions.backwards = backwards;
 
    // Must start the thread and poller first or else PlayPlayRegion
    // will insert some silence
@@ -669,12 +668,12 @@ void Scrubber::ContinueScrubbingPoll()
       gAudioIO->UpdateScrub(speed, mOptions);
    }
    else if (mKeyboardScrubbing) {
-      double speed = GetKeyboardScrubbingSpeed();
       mOptions.minSpeed = ScrubbingOptions::MinAllowedScrubSpeed();
       mOptions.maxSpeed = ScrubbingOptions::MaxAllowedScrubSpeed();
       mOptions.adjustStart = false;
       mOptions.bySpeed = true;
-      if (mOptions.backwards)
+      double speed = GetKeyboardScrubbingSpeed();
+      if (mBackwards)
          speed *= -1.0;
       gAudioIO->UpdateScrub(speed, mOptions);
    } else {

@@ -162,6 +162,7 @@ private:
    bool mSeeking {};
    bool mSpeedPlaying{true};
    bool mKeyboardScrubbing{};
+   bool mBackwards{};
    bool mDragging {};
 
    bool mCancelled {};
