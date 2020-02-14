@@ -1505,6 +1505,34 @@ void CommandManager::CheckDups()
 
 #endif
 
+void CommandManager::CheckDups2()
+{
+   TranslatableString disabledShortcuts;
+
+   for (auto& entry : mCommandList) {
+
+      if (!entry->key.empty() && entry->key != entry->defaultKey) {
+
+         for (auto& entry2 : mCommandList) {
+
+            if (!entry2->key.empty() && entry2->key == entry2->defaultKey) {
+
+               if (entry2->key == entry->key) {
+                  TranslatableString key{entry->key.GET(), {}};
+                  entry2->key = NormalizedKeyString{""};
+
+                  disabledShortcuts += XO("\n* ") +
+                     entry2->label +
+                     XO("because the shortcut") + key +
+                     XO(" is used by ") + entry->label;
+
+               }
+            }
+         }
+      }
+   }
+}
+
 #include "../KeyboardCapture.h"
 
 static struct InstallHandlers
