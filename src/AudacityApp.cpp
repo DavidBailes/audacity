@@ -1590,6 +1590,7 @@ bool AudacityApp::OnInit()
       //
       // Auto-recovery
       //
+      CommandManager::Get(*project).CheckDups2();
       bool didRecoverAnything = false;
       if (!ShowAutoRecoveryDialogIfNeeded(&project, &didRecoverAnything))
       {

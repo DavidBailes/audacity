@@ -1518,18 +1518,28 @@ void CommandManager::CheckDups2()
             if (!entry2->key.empty() && entry2->key == entry2->defaultKey) {
 
                if (entry2->key == entry->key) {
+                  auto name = wxT("/NewKeys/") + entry2->name.GET();
+                  gPrefs->Write(name, NormalizedKeyString{""});
+
                   TranslatableString key{entry->key.GET(), {}};
-                  entry2->key = NormalizedKeyString{""};
-
-                  disabledShortcuts += XO("\n* ") +
-                     entry2->label +
-                     XO("because the shortcut") + key +
-                     XO(" is used by ") + entry->label;
-
+                  disabledShortcuts += XO("\n* %s, because you have assigned the shortcut %s to %s")
+                     .Format(entry2->label.Strip(), key, entry->label.Strip());
                }
             }
          }
       }
+   }
+
+   if (!disabledShortcuts.Translation().empty()) {
+      TranslatableString message = XO("The following commands have had there shortcuts removed,"
+      " because their default shortcut is new or changed, and is the same shortcut"
+      " that you have assigned to another command.")
+         + disabledShortcuts;
+      AudacityMessageBox(message, XO("The world is going to end"), wxOK | wxCENTRE);
+
+      gPrefs->Flush();
+
+      // need to update the menus here.
    }
 }
 
