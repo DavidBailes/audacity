@@ -857,7 +857,7 @@ wxAccStatus AButtonAx::GetState(int WXUNUSED(childId), long* state)
    else
    {
       // For a toggle button, the state is included in the name
-      if(ab->mButtonIsDown && !ab->mToggle)
+      if(ab->mButtonIsDown)
          *state |= wxACC_STATE_SYSTEM_PRESSED;
 
       if(ab->mCursorIsInWindow)
